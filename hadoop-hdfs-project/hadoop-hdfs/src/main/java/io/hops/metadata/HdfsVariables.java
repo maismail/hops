@@ -128,7 +128,6 @@ public class HdfsVariables {
   private static CountersQueue.Counter incrementCounter(final Variable.Finder
       finder, final int increment)
       throws StorageException {
-
     return (CountersQueue.Counter) handleVariableWithWriteLock(new Handler() {
       @Override
       public Object handle(VariableDataAccess<Variable, Variable.Finder> vd)

@@ -162,10 +162,7 @@ public class INodeDALAdaptor
   //Only for testing
   @Override
   public List<org.apache.hadoop.hdfs.server.namenode.INode> allINodes() throws StorageException {
-    List<org.apache.hadoop.hdfs.server.namenode.INode> list =
-        (List) convertDALtoHDFS(
-            dataAccess.allINodes());
-    return list;
+    return (List) convertDALtoHDFS(dataAccess.allINodes());
   }
 
   @Override
@@ -186,6 +183,7 @@ public class INodeDALAdaptor
       hopINode.setId(inode.getId());
       hopINode.setIsDir(inode.isDirectory());
       hopINode.setPartitionId(inode.getPartitionId());
+      hopINode.setStoragePolicy(inode.getLocalStoragePolicyID());
 
       if (inode.isDirectory()) {
         hopINode.setUnderConstruction(false);
@@ -280,6 +278,7 @@ public class INodeDALAdaptor
         inode.setGroupIDNoPersistance(hopINode.getGroupID());
         inode.setHeaderNoPersistance(hopINode.getHeader());
         inode.setPartitionIdNoPersistance(hopINode.getPartitionId());
+        inode.setBlockStoragePolicyIDNoPersistance(hopINode.getStoragePolicy());
       }
       return inode;
     }catch (IOException ex){
