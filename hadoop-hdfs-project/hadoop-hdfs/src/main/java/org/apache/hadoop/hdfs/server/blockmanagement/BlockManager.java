@@ -1948,7 +1948,8 @@ public class BlockManager {
             LockFactory lf = LockFactory.getInstance();
             Block b = (Block) getParams()[0];
             locks.add(
-                lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
+                lf.getIndividualINodeLock(INodeLockType.WRITE,
+                    inodeIdentifier, true))
                 .add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))
                 .add(
                     lf.getBlockRelated(BLK.RE, BLK.IV, BLK.CR, BLK.UR, BLK.ER));
@@ -2068,7 +2069,8 @@ public class BlockManager {
             LockFactory lf = LockFactory.getInstance();
             Block b = (Block) getParams()[0];
             locks.add(
-                lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
+                lf.getIndividualINodeLock(INodeLockType.WRITE,
+                    inodeIdentifier, true))
                 .add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))
                 .add(lf.getBlockRelated(BLK.CR, BLK.ER, BLK.IV, BLK.PE, BLK.RE,
                     BLK.UC, BLK.UR));
