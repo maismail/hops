@@ -26,12 +26,15 @@ import io.hops.log.NDCWrapper;
 import io.hops.metadata.HdfsStorageFactory;
 import io.hops.metadata.HdfsVariables;
 import io.hops.metadata.election.dal.HdfsLeDescriptorDataAccess;
+import io.hops.metadata.election.entity.LeDescriptor;
 import io.hops.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import io.hops.metadata.hdfs.dal.ExcessReplicaDataAccess;
 import io.hops.metadata.hdfs.dal.InvalidateBlockDataAccess;
 import io.hops.metadata.hdfs.dal.PendingBlockDataAccess;
 import io.hops.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import io.hops.security.UsersGroups;
+import io.hops.transaction.handler.HDFSOperationType;
+import io.hops.transaction.handler.LightWeightRequestHandler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -86,6 +89,7 @@ import java.nio.channels.FileChannel;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
@@ -592,7 +596,7 @@ public class MiniDFSCluster {
         true, false, false);
   }
 
-  private void initMiniDFSCluster(Configuration conf, int numDataNodes,
+  private void initMiniDFSCluster(Configuration conf, final int numDataNodes,
       boolean format, boolean manageNameDfsDirs,
       boolean manageNameDfsSharedDirs, boolean enableManagedDfsDirsRedundancy,
       boolean manageDataDfsDirs, StartupOption operation, String[] racks,
@@ -651,7 +655,32 @@ public class MiniDFSCluster {
       }
     }
 
-    deleteReplicasTable();
+    LOG.info("DDD: format leader table");
+    new LightWeightRequestHandler(HDFSOperationType.TEST){
+
+      @Override
+      public Object performTask() throws IOException {
+        HdfsLeDescriptorDataAccess da = (HdfsLeDescriptorDataAccess) HdfsStorageFactory.getDataAccess
+            (HdfsLeDescriptorDataAccess.class);
+        Collection<LeDescriptor> descriptors = da.findAll();
+        LOG.info("DDD: before formating " + descriptors.size());
+        return null;
+      }
+    }.handle();
+
+    HdfsStorageFactory.formatStorage(HdfsLeDescriptorDataAccess.class);
+
+    new LightWeightRequestHandler(HDFSOperationType.TEST){
+
+      @Override
+      public Object performTask() throws IOException {
+        HdfsLeDescriptorDataAccess da = (HdfsLeDescriptorDataAccess) HdfsStorageFactory.getDataAccess
+            (HdfsLeDescriptorDataAccess.class);
+        Collection<LeDescriptor> descriptors = da.findAll();
+        LOG.info("DDD: after formating " + descriptors.size());
+        return null;
+      }
+    }.handle();
 
     try {
       createNameNodesAndSetConf(nnTopology, manageNameDfsDirs,
