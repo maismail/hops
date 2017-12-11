@@ -651,6 +651,7 @@ public class MiniDFSCluster {
       }
     }
 
+    deleteReplicasTable();
 
     try {
       createNameNodesAndSetConf(nnTopology, manageNameDfsDirs,
