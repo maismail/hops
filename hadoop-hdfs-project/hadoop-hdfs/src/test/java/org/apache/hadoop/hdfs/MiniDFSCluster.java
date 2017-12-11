@@ -656,31 +656,9 @@ public class MiniDFSCluster {
     }
 
     LOG.info("DDD: format leader table");
-    new LightWeightRequestHandler(HDFSOperationType.TEST){
-
-      @Override
-      public Object performTask() throws IOException {
-        HdfsLeDescriptorDataAccess da = (HdfsLeDescriptorDataAccess) HdfsStorageFactory.getDataAccess
-            (HdfsLeDescriptorDataAccess.class);
-        Collection<LeDescriptor> descriptors = da.findAll();
-        LOG.info("DDD: before formating " + descriptors.size());
-        return null;
-      }
-    }.handle();
 
     HdfsStorageFactory.formatStorage(HdfsLeDescriptorDataAccess.class);
-
-    new LightWeightRequestHandler(HDFSOperationType.TEST){
-
-      @Override
-      public Object performTask() throws IOException {
-        HdfsLeDescriptorDataAccess da = (HdfsLeDescriptorDataAccess) HdfsStorageFactory.getDataAccess
-            (HdfsLeDescriptorDataAccess.class);
-        Collection<LeDescriptor> descriptors = da.findAll();
-        LOG.info("DDD: after formating " + descriptors.size());
-        return null;
-      }
-    }.handle();
+    
 
     try {
       createNameNodesAndSetConf(nnTopology, manageNameDfsDirs,
