@@ -235,7 +235,7 @@ public class LETransaction {
 
   private void leaderCheck() throws IOException, LEWeakLocks {
     long smallestAliveProcess = getSmallestIdAliveProcess();
-    //LOG.debug("LE Status: id " + context.id + " Smalles alive process is id "+smallestAliveProcess);
+    LOG.info("LE Status: id " + context.id + " Smallest alive process is id "+smallestAliveProcess);
     if (smallestAliveProcess == context.id) {
       if (txLockType == TransactionLockTypes.LockType.WRITE) {
         if (context.role !=
