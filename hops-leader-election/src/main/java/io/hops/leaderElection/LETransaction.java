@@ -302,7 +302,8 @@ public class LETransaction {
   private void membershipMgm() throws IOException {
     List<LeDescriptor> aliveList = getAllAliveProcesses();
     makeSortedActiveNodeList(aliveList);
-    LOG.info("DDD: current Alive namenodes " + context.memberShip);
+    LOG.info("DDD: current Alive namenodes " + context.memberShip .size()  +
+        " -> " + context.memberShip);
   }
 
   private List<LeDescriptor> getAllAliveProcesses() throws IOException {

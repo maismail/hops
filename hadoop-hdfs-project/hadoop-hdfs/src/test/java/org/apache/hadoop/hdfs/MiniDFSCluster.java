@@ -17,7 +17,9 @@
  */
 package org.apache.hadoop.hdfs;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import io.hops.erasure_coding.MockEncodingManager;
 import io.hops.erasure_coding.MockRepairManager;
@@ -26,6 +28,7 @@ import io.hops.log.NDCWrapper;
 import io.hops.metadata.HdfsStorageFactory;
 import io.hops.metadata.HdfsVariables;
 import io.hops.metadata.election.dal.HdfsLeDescriptorDataAccess;
+import io.hops.metadata.election.dal.LeDescriptorDataAccess;
 import io.hops.metadata.election.entity.LeDescriptor;
 import io.hops.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import io.hops.metadata.hdfs.dal.ExcessReplicaDataAccess;
@@ -77,6 +80,7 @@ import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.ToolRunner;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -657,8 +661,59 @@ public class MiniDFSCluster {
 
     LOG.info("DDD: format leader table");
 
+    new LightWeightRequestHandler(HDFSOperationType.TEST){
+
+      @Override
+      public Object performTask() throws IOException {
+        LeDescriptorDataAccess<LeDescriptor> da =
+            (LeDescriptorDataAccess<LeDescriptor>) HdfsStorageFactory
+                .getDataAccess(HdfsLeDescriptorDataAccess.class);
+        Collection<LeDescriptor> nodes = da.findAll();
+        Collection<String> nodesS = Collections2.transform(nodes, new
+            Function<LeDescriptor, String>() {
+              @Nullable
+              @Override
+              public String apply(
+                  @Nullable
+                      LeDescriptor leDescriptor) {
+                return (leDescriptor.getId() + ", " + leDescriptor.getCounter
+                    () + "," + leDescriptor.getHttpAddress() + "," + leDescriptor
+                    .getRpcAddresses());
+              }
+            });
+
+        LOG.info("DDD: number of nodes " + nodesS.size() + " -> " + nodesS);
+        return null;
+      }
+    }.handle();
+
     HdfsStorageFactory.formatStorage(HdfsLeDescriptorDataAccess.class);
-    
+
+    new LightWeightRequestHandler(HDFSOperationType.TEST){
+
+      @Override
+      public Object performTask() throws IOException {
+        LeDescriptorDataAccess<LeDescriptor> da =
+            (LeDescriptorDataAccess<LeDescriptor>) HdfsStorageFactory
+                .getDataAccess(HdfsLeDescriptorDataAccess.class);
+        Collection<LeDescriptor> nodes = da.findAll();
+        Collection<String> nodesS = Collections2.transform(nodes, new
+            Function<LeDescriptor, String>() {
+          @Nullable
+          @Override
+          public String apply(
+              @Nullable
+                  LeDescriptor leDescriptor) {
+            return (leDescriptor.getId() + ", " + leDescriptor.getCounter
+                () + "," + leDescriptor.getHttpAddress() + "," + leDescriptor
+                .getRpcAddresses());
+          }
+        });
+
+        LOG.info("DDD: number of nodes " + nodesS.size() + " -> " + nodesS);
+        return null;
+      }
+    }.handle();
 
     try {
       createNameNodesAndSetConf(nnTopology, manageNameDfsDirs,
