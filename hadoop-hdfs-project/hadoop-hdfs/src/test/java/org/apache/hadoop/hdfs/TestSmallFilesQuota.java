@@ -80,6 +80,7 @@ public class TestSmallFilesQuota {
    */
   @Test
   public void testDSQuotaExceededExceptionIsHumanReadable() throws Exception {
+    LOG.info("DDD: testDSQuotaExceededExceptionIsHumanReadable");
     Integer bytes = 1024;
     try {
       throw new DSQuotaExceededException(bytes, bytes);
@@ -96,6 +97,7 @@ public class TestSmallFilesQuota {
    */
   @Test
   public void testQuotaCommands() throws Exception {
+    LOG.info("DDD: testQuotaCommands");
     final Configuration conf = new HdfsConfiguration();
     conf.setBoolean(DFSConfigKeys.DFS_STORE_SMALL_FILES_IN_DB_KEY, true);
     conf.setInt(DFSConfigKeys.DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY, 1000);
