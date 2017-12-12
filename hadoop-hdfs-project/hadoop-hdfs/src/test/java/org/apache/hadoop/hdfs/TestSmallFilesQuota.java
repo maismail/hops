@@ -103,6 +103,8 @@ public class TestSmallFilesQuota {
     conf.setInt(DFSConfigKeys.DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY, 1000);
     final MiniDFSCluster cluster =
         new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
+    cluster.waitActive();
+    
     final FileSystem fs = cluster.getFileSystem();
     assertTrue("Not a HDFS: " + fs.getUri(),
         fs instanceof DistributedFileSystem);
