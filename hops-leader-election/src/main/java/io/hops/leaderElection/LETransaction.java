@@ -15,6 +15,8 @@
  */
 package io.hops.leaderElection;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.leaderElection.exception.LEWeakLocks;
@@ -32,8 +34,10 @@ import io.hops.transaction.lock.TransactionLockTypes;
 import io.hops.transaction.lock.TransactionLocks;
 import org.apache.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -135,6 +139,26 @@ public class LETransaction {
   private void initPhase() throws IOException {
     LOG.debug("LE Status: id " + context.id +
         " Executing initial phase of the protocol. ");
+
+    List<LeDescriptor> descriptors = (List<LeDescriptor>) EntityManager.findList(leFactory
+        .getAllFinder());
+    Collection<String> nodesS = Collections2.transform(descriptors, new
+        Function<LeDescriptor, String>() {
+          @Nullable
+          @Override
+          public String apply(
+              @Nullable
+                  LeDescriptor leDescriptor) {
+            return (leDescriptor.getId() + ", " + leDescriptor.getCounter
+                () + "," + leDescriptor.getHttpAddress() + "," + leDescriptor
+                .getRpcAddresses());
+          }
+        });
+
+    LOG.info("DDD: initPhase " + nodesS.size() +  " --> " + nodesS);
+    LOG.info("DDD: initPhase Members " + context.memberShip);
+    LOG.info("DDD: initPhase History " + context.history);
+
     try {
       updateCounter();
       context.init_phase = false;
