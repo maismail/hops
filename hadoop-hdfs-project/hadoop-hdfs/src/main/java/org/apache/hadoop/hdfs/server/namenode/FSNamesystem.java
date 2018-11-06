@@ -420,7 +420,6 @@ public class FSNamesystem
 
   private Daemon retryCacheCleanerThread = null;
 
-  private volatile boolean hasResourcesAvailable = true; //HOP. yes we have huge namespace
   private volatile boolean fsRunning = true;
 
   /**
@@ -481,6 +480,12 @@ public class FSNamesystem
   private ThreadLocal<Times> delays = new ThreadLocal<Times>();
   long delayBeforeSTOFlag = 0; //This parameter can not be more than TxInactiveTimeout: 1.2 sec
   long delayAfterBuildingTree=0;
+
+  private volatile boolean skipReadingSafeModeFromDBIfLastEmpty = false;
+  private volatile List<Object> lastReadSafeModeVariable = null;
+  
+  private final double databaseResourcesThreshold;
+  private final double databaseResourcesPreThreshold;
 
   /**
    * Clear all loaded data
@@ -681,6 +686,14 @@ public class FSNamesystem
       this.isRetryCacheEnabled = conf.getBoolean(DFS_NAMENODE_ENABLE_RETRY_CACHE_KEY,
           DFS_NAMENODE_ENABLE_RETRY_CACHE_DEFAULT);
       this.retryCache = ignoreRetryCache ? null : initRetryCache(conf);
+      
+      this.databaseResourcesThreshold =
+          conf.getDouble(DFSConfigKeys.DFS_NAMENODE_RESOURCE_CHECK_THRESHOLD,
+              DFSConfigKeys.DFS_NAMENODE_RESOURCE_CHECK_THRESHOLD_DEFAULT);
+      this.databaseResourcesPreThreshold =
+          conf.getDouble(DFSConfigKeys.DFS_NAMENODE_RESOURCE_CHECK_PRETHRESHOLD,
+              DFSConfigKeys.DFS_NAMENODE_RESOURCE_CHECK_PRETHRESHOLD_DEFAULT);
+      
     } catch (IOException | RuntimeException e) {
       LOG.error(getClass().getSimpleName() + " initialization failed.", e);
       close();
@@ -4409,9 +4422,8 @@ public class FSNamesystem
    *
    * @return true if there were sufficient resources available, false otherwise.
    */
-  private boolean nameNodeHasResourcesAvailable() {
-    //TODO check if the database has resources left.
-    return hasResourcesAvailable;
+  private boolean nameNodeHasResourcesAvailable() throws StorageException {
+    return HdfsStorageFactory.hasResources(databaseResourcesThreshold);
   }
 
   /**
@@ -4428,8 +4440,20 @@ public class FSNamesystem
     public void run() {
       try {
         while (fsRunning && shouldNNRmRun) {
+          if(HdfsStorageFactory.hasResources(databaseResourcesPreThreshold)){
+            continue;
+          }
+          //Database resources are in between preThreshold and Threshold
+          //that means that soon enough we will hit the resources threshold
+          //therefore, we enable reading the safemode variable from the
+          //database, since at any point from now on, the leader will go to
+          //safe mode.
+          
+          skipReadingSafeModeFromDBIfLastEmpty = false;
+          
           if (isLeader() && !nameNodeHasResourcesAvailable()) {
-            String lowResourcesMsg = "NameNode low on available disk space. ";
+            String lowResourcesMsg = "NameNode's database low on available " +
+                "resources.";
             if (!isInSafeMode()) {
               FSNamesystem.LOG.warn(lowResourcesMsg + "Entering safe mode.");
             } else {
@@ -4789,6 +4813,8 @@ public class FSNamesystem
       leaveInternal();
 
       clearSafeBlocks();
+      
+      skipReadingSafeModeFromDBIfLastEmpty = true;
     }
 
     private void leaveInternal() throws IOException {
@@ -5344,12 +5370,20 @@ public class FSNamesystem
   }
 
   private SafeModeInfo safeMode() throws IOException{
-    List<Object> vals = HdfsVariables.getSafeModeFromDB();
-    if(vals==null || vals.isEmpty()){
+    if(skipReadingSafeModeFromDBIfLastEmpty){
+      if(lastReadSafeModeVariable == null || lastReadSafeModeVariable.isEmpty()){
+        return null;
+      }
+    }
+    
+    lastReadSafeModeVariable = HdfsVariables.getSafeModeFromDB();
+    if(lastReadSafeModeVariable == null || lastReadSafeModeVariable.isEmpty()){
       return null;
     }
-    return new FSNamesystem.SafeModeInfo((double) vals.get(0), (int) vals.get(1), (int) vals.get(2), (int) vals.get(3),
-        (double) vals.get(4), (int) vals.get(5) == 0 ? true : false);
+    return new FSNamesystem.SafeModeInfo((double) lastReadSafeModeVariable.get(0),
+        (int) lastReadSafeModeVariable.get(1), (int) lastReadSafeModeVariable.get(2),
+        (int) lastReadSafeModeVariable.get(3), (double) lastReadSafeModeVariable.get(4),
+        (int) lastReadSafeModeVariable.get(5) == 0 ? true : false);
   }
   
   @Override
@@ -5538,6 +5572,9 @@ public class FSNamesystem
    * @throws IOException
    */
   void enterSafeMode(boolean resourcesLow) throws IOException {
+    
+    skipReadingSafeModeFromDBIfLastEmpty = false;
+    
     if(!isLeader()){
       return;
     }
@@ -5572,6 +5609,8 @@ public class FSNamesystem
    * @throws IOException
    */
   void leaveSafeMode() throws IOException {
+    skipReadingSafeModeFromDBIfLastEmpty = true;
+    
     if (!isInSafeMode()) {
       NameNode.stateChangeLog.info("STATE* Safe mode is already OFF");
       return;
