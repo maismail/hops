@@ -480,9 +480,9 @@ public class FSNamesystem
   private ThreadLocal<Times> delays = new ThreadLocal<Times>();
   long delayBeforeSTOFlag = 0; //This parameter can not be more than TxInactiveTimeout: 1.2 sec
   long delayAfterBuildingTree=0;
-
-  private volatile boolean skipReadingSafeModeFromDBIfLastEmpty = false;
-  private volatile List<Object> lastReadSafeModeVariable = null;
+  
+  private volatile boolean forceReadTheSafeModeFromDB = false;
+  private volatile boolean inSafeMode = true;
   
   private final double databaseResourcesThreshold;
   private final double databaseResourcesPreThreshold;
@@ -4448,8 +4448,8 @@ public class FSNamesystem
           //therefore, we enable reading the safemode variable from the
           //database, since at any point from now on, the leader will go to
           //safe mode.
-          
-          skipReadingSafeModeFromDBIfLastEmpty = false;
+  
+          forceReadTheSafeModeFromDB = true;
           
           if (isLeader() && !nameNodeHasResourcesAvailable()) {
             String lowResourcesMsg = "NameNode's database low on available " +
@@ -4814,7 +4814,8 @@ public class FSNamesystem
 
       clearSafeBlocks();
       
-      skipReadingSafeModeFromDBIfLastEmpty = true;
+      forceReadTheSafeModeFromDB = false;
+      inSafeMode = false;
     }
 
     private void leaveInternal() throws IOException {
@@ -5370,20 +5371,19 @@ public class FSNamesystem
   }
 
   private SafeModeInfo safeMode() throws IOException{
-    if(skipReadingSafeModeFromDBIfLastEmpty){
-      if(lastReadSafeModeVariable == null || lastReadSafeModeVariable.isEmpty()){
-        return null;
-      }
-    }
-    
-    lastReadSafeModeVariable = HdfsVariables.getSafeModeFromDB();
-    if(lastReadSafeModeVariable == null || lastReadSafeModeVariable.isEmpty()){
+    if(!inSafeMode && !forceReadTheSafeModeFromDB){
       return null;
     }
-    return new FSNamesystem.SafeModeInfo((double) lastReadSafeModeVariable.get(0),
-        (int) lastReadSafeModeVariable.get(1), (int) lastReadSafeModeVariable.get(2),
-        (int) lastReadSafeModeVariable.get(3), (double) lastReadSafeModeVariable.get(4),
-        (int) lastReadSafeModeVariable.get(5) == 0 ? true : false);
+    
+    List<Object> vals = HdfsVariables.getSafeModeFromDB();
+    if(vals == null || vals.isEmpty()){
+      inSafeMode = false;
+      return null;
+    }
+    return new FSNamesystem.SafeModeInfo((double) vals.get(0),
+        (int) vals.get(1), (int) vals.get(2),
+        (int) vals.get(3), (double) vals.get(4),
+        (int) vals.get(5) == 0 ? true : false);
   }
   
   @Override
@@ -5573,7 +5573,7 @@ public class FSNamesystem
    */
   void enterSafeMode(boolean resourcesLow) throws IOException {
     
-    skipReadingSafeModeFromDBIfLastEmpty = false;
+    forceReadTheSafeModeFromDB = true;
     
     if(!isLeader()){
       return;
@@ -5609,7 +5609,7 @@ public class FSNamesystem
    * @throws IOException
    */
   void leaveSafeMode() throws IOException {
-    skipReadingSafeModeFromDBIfLastEmpty = true;
+    forceReadTheSafeModeFromDB = false;
     
     if (!isInSafeMode()) {
       NameNode.stateChangeLog.info("STATE* Safe mode is already OFF");
