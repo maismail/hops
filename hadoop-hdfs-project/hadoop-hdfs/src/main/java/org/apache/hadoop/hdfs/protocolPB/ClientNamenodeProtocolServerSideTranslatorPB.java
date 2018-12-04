@@ -1187,6 +1187,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB
     anp.setHttpAddress(p.getHttpAddress());
     anp.setServiceIpAddress(p.getServiceRpcIpAddress());
     anp.setServicePort(p.getServiceRpcPort());
+    anp.setLocationDomainId(p.getLocationDomainId());
     return anp.build();
   }
 

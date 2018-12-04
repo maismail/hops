@@ -2024,7 +2024,8 @@ public class PBHelper {
   public static ActiveNode convert(ActiveNodeProto p) {
     ActiveNode an =
         new ActiveNodePBImpl(p.getId(), p.getRpcHostname(), p.getRpcIpAddress(),
-            p.getRpcPort(), p.getHttpAddress(), p.getServiceIpAddress(), p.getServicePort());
+            p.getRpcPort(), p.getHttpAddress(), p.getServiceIpAddress(),
+            p.getServicePort(), p.getLocationDomainId());
     return an;
   }
 

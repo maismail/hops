@@ -1010,4 +1010,8 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_DFSCLIENT_HEDGED_READ_THREADPOOL_SIZE =
       "dfs.client.hedged.read.threadpool.size";
   public static final int DEFAULT_DFSCLIENT_HEDGED_READ_THREADPOOL_SIZE = 0;
+  
+  public static final String DFS_LOCATION_DOMAIN_ID = "dfs.locationDomainId";
+  public static final byte DFS_LOCATION_DOMAIN_ID_DEFAULT = 0;
+  
 }
