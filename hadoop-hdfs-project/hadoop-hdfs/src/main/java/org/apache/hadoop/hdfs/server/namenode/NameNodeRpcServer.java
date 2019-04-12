@@ -37,6 +37,8 @@ import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.BatchedRemoteIterator.BatchedEntries;
+import org.apache.hadoop.fs.XAttr;
+import org.apache.hadoop.fs.XAttrSetFlag;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -1610,5 +1612,23 @@ class NameNodeRpcServer implements NamenodeProtocols {
     checkNNStartup();
     namesystem.checkSuperuserPrivilege();
     nn.tracerConfigurationManager.removeSpanReceiver(id);
+  }
+  
+  @Override
+  public void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
+      throws IOException {
+    //TODO: will be implemented as part of HDFS-xxxx
+  }
+  
+  @Override
+  public List<XAttr> getXAttrs(String src, List<XAttr> xAttrs)
+      throws IOException {
+    //TODO: will be implemented as part of HDFS-xxxx
+    return null;
+  }
+  
+  @Override
+  public void removeXAttr(String src, XAttr xAttr) throws IOException {
+    //TODO: will be implemented as part of HDFS-xxxx
   }
 }
