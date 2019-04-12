@@ -66,6 +66,8 @@ import org.apache.hadoop.fs.InvalidPathException;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.UnresolvedLinkException;
+import org.apache.hadoop.fs.XAttr;
+import org.apache.hadoop.fs.XAttrSetFlag;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryScope;
 import org.apache.hadoop.fs.permission.AclStatus;
@@ -470,7 +472,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
 
   private volatile boolean imageLoaded = false;
   
-  private final AclConfigFlag aclConfigFlag;
+  private final NNConf nnConf;
 
   private final RetryCacheDistributed retryCache;
   private final boolean isRetryCacheEnabled;
@@ -702,7 +704,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       this.auditLoggers = initAuditLoggers(conf);
       this.isDefaultAuditLogger = auditLoggers.size() == 1 &&
           auditLoggers.get(0) instanceof DefaultAuditLogger;
-      this.aclConfigFlag = new AclConfigFlag(conf);
+      this.nnConf = new NNConf(conf);
       this.isRetryCacheEnabled = conf.getBoolean(DFS_NAMENODE_ENABLE_RETRY_CACHE_KEY,
           DFS_NAMENODE_ENABLE_RETRY_CACHE_DEFAULT);
       this.retryCache = ignoreRetryCache ? null : initRetryCache(conf);
@@ -7884,6 +7886,127 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     } finally {
       logAuditEvent(success, "getAclStatus", src);
     }
+  }
+  
+  void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
+      throws IOException {
+    /*
+    nnConf.checkXAttrsConfigFlag();
+    HdfsFileStatus resultingStat = null;
+    FSPermissionChecker pc = getPermissionChecker();
+    try {
+      XAttrPermissionFilter.checkPermissionForApi(pc, xAttr);
+    } catch (AccessControlException e) {
+      logAuditEvent(false, "setXAttr", src);
+      throw e;
+    }
+    checkOperation(OperationCategory.WRITE);
+    byte[][] pathComponents = FSDirectory.getPathComponentsForReservedPath(src);
+    //writeLock();
+    try {
+      checkOperation(OperationCategory.WRITE);
+      checkNameNodeSafeMode("Cannot set XAttr on " + src);
+      src = FSDirectory.resolvePath(src, pathComponents, dir);
+      if (isPermissionEnabled) {
+        checkPathAccess(pc, src, FsAction.WRITE);
+      }
+      
+      dir.setXAttr(src, xAttr, flag);
+      resultingStat = getAuditFileInfo(src, false);
+    } catch (AccessControlException e) {
+      logAuditEvent(false, "setXAttr", src);
+      throw e;
+    }
+    finally {
+      writeUnlock();
+    }
+    getEditLog().logSync();
+    logAuditEvent(true, "setXAttr", src, null, resultingStat);*/
+  }
+  
+  List<XAttr> getXAttrs(String src, List<XAttr> xAttrs) throws IOException {
+    /*
+    nnConf.checkXAttrsConfigFlag();
+    FSPermissionChecker pc = getPermissionChecker();
+    boolean getAll = xAttrs == null || xAttrs.isEmpty();
+    List<XAttr> filteredXAttrs = null;
+    if (!getAll) {
+      filteredXAttrs = XAttrPermissionFilter.filterXAttrsForApi(pc, xAttrs);
+      if (filteredXAttrs.isEmpty()) {
+        return filteredXAttrs;
+      }
+    }
+    checkOperation(OperationCategory.READ);
+    readLock();
+    try {
+      checkOperation(OperationCategory.READ);
+      if (isPermissionEnabled) {
+        checkPathAccess(pc, src, FsAction.READ);
+      }
+      List<XAttr> all = dir.getXAttrs(src);
+      List<XAttr> filteredAll = XAttrPermissionFilter.
+          filterXAttrsForApi(pc, all);
+      if (getAll) {
+        return filteredAll;
+      } else {
+        if (filteredAll == null || filteredAll.isEmpty()) {
+          return null;
+        }
+        List<XAttr> toGet = Lists.newArrayListWithCapacity(filteredXAttrs.size());
+        for (XAttr xAttr : filteredXAttrs) {
+          for (XAttr a : filteredAll) {
+            if (xAttr.getNameSpace() == a.getNameSpace()
+                && xAttr.getName().equals(a.getName())) {
+              toGet.add(a);
+              break;
+            }
+          }
+        }
+        return toGet;
+      }
+    } catch (AccessControlException e) {
+      logAuditEvent(false, "getXAttrs", src);
+      throw e;
+    } finally {
+      readUnlock();
+    }
+     */
+    return null;
+  }
+  
+  void removeXAttr(String src, XAttr xAttr) throws IOException {
+    /*
+    nnConf.checkXAttrsConfigFlag();
+    HdfsFileStatus resultingStat = null;
+    FSPermissionChecker pc = getPermissionChecker();
+    try {
+      XAttrPermissionFilter.checkPermissionForApi(pc, xAttr);
+    } catch (AccessControlException e) {
+      logAuditEvent(false, "removeXAttr", src);
+      throw e;
+    }
+    checkOperation(OperationCategory.WRITE);
+    byte[][] pathComponents = FSDirectory.getPathComponentsForReservedPath(src);
+    writeLock();
+    try {
+      checkOperation(OperationCategory.WRITE);
+      checkNameNodeSafeMode("Cannot remove XAttr entry on " + src);
+      src = FSDirectory.resolvePath(src, pathComponents, dir);
+      if (isPermissionEnabled) {
+        checkPathAccess(pc, src, FsAction.WRITE);
+      }
+      
+      dir.removeXAttr(src, xAttr);
+      resultingStat = getAuditFileInfo(src, false);
+    } catch (AccessControlException e) {
+      logAuditEvent(false, "removeXAttr", src);
+      throw e;
+    } finally {
+      writeUnlock();
+    }
+    getEditLog().logSync();
+    logAuditEvent(true, "removeXAttr", src, null, resultingStat);
+     */
   }
 
   /**

@@ -550,6 +550,10 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
       "dfs.namenode.name.dir.restore";
   public static final String  DFS_NAMENODE_ACLS_ENABLED_KEY = "dfs.namenode.acls.enabled";
   public static final boolean DFS_NAMENODE_ACLS_ENABLED_DEFAULT = false;
+  public static final String  DFS_NAMENODE_XATTRS_ENABLED_KEY = "dfs.namenode.xattrs.enabled";
+  public static final boolean DFS_NAMENODE_XATTRS_ENABLED_DEFAULT = true;
+  public static final String  DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_KEY = "dfs.namenode.inode.xattrs.max-limit";
+  public static final int     DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_DEFAULT = 32;
   public static final boolean DFS_NAMENODE_NAME_DIR_RESTORE_DEFAULT = false;
   public static final String DFS_NAMENODE_SUPPORT_ALLOW_FORMAT_KEY =
       "dfs.namenode.support.allow.format";

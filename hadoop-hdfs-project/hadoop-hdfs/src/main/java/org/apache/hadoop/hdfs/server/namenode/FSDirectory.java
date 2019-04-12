@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import io.hops.common.IDsGeneratorFactory;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
@@ -62,7 +63,8 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 import org.apache.hadoop.hdfs.util.EnumCounters;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
-
+import org.apache.hadoop.fs.XAttr;
+import org.apache.hadoop.fs.XAttrSetFlag;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.slf4j.Logger;
@@ -73,6 +75,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.Charsets;
@@ -111,6 +114,7 @@ public class FSDirectory implements Closeable {
   private final int lsLimit;  // max list limit
   private final int contentCountLimit; // max content summary counts per run
   private long yieldCount = 0; // keep track of lock yield count.
+  private final int inodeXAttrsLimit; //inode xattrs max limit
   
   private boolean quotaEnabled;
 
@@ -193,7 +197,11 @@ public class FSDirectory implements Closeable {
     Preconditions.checkArgument(maxDirItems >= 0, "Cannot set "
         + DFSConfigKeys.DFS_NAMENODE_MAX_DIRECTORY_ITEMS_KEY
         + " to a value less than 0");
-    
+  
+    this.inodeXAttrsLimit = conf.getInt(
+        DFSConfigKeys.DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_KEY,
+        DFSConfigKeys.DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_DEFAULT);
+  
     int threshold =
         conf.getInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY,
             DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_DEFAULT);
@@ -1493,4 +1501,95 @@ public class FSDirectory implements Closeable {
       }
     }
   }
+  
+  
+  void removeXAttr(String src, XAttr xAttr) throws IOException {
+      unprotectedRemoveXAttr(src, xAttr);
+  }
+  
+  private List<XAttr> unprotectedRemoveXAttr(String src,
+      XAttr xAttr) throws IOException {
+    INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
+    INode inode = resolveLastINode(iip);
+    List<XAttr> existingXAttrs = XAttrStorage.readINodeXAttrs(inode);
+    List<XAttr> newXAttrs = filterINodeXAttr(existingXAttrs, xAttr);
+    XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
+    
+    return newXAttrs;
+  }
+  
+  List<XAttr> filterINodeXAttr(List<XAttr> existingXAttrs,
+      XAttr xAttr) throws QuotaExceededException {
+    if (existingXAttrs == null || existingXAttrs.isEmpty()) {
+      return existingXAttrs;
+    }
+    
+    List<XAttr> xAttrs = Lists.newArrayListWithCapacity(existingXAttrs.size());
+    for (XAttr a : existingXAttrs) {
+      if (!(a.getNameSpace() == xAttr.getNameSpace()
+          && a.getName().equalsIgnoreCase(xAttr.getName()))) {
+        xAttrs.add(a);
+      }
+    }
+    
+    return xAttrs;
+  }
+  
+  void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
+      throws IOException {
+      unprotectedSetXAttr(src, xAttr, flag);
+  }
+  
+  List<XAttr> unprotectedSetXAttr(String src, XAttr xAttr,
+      EnumSet<XAttrSetFlag> flag) throws IOException {
+    INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
+    INode inode = resolveLastINode(iip);
+    List<XAttr> existingXAttrs = XAttrStorage.readINodeXAttrs(inode);
+    List<XAttr> newXAttrs = setINodeXAttr(existingXAttrs, xAttr, flag);
+    XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
+    
+    return newXAttrs;
+  }
+  
+  List<XAttr> setINodeXAttr(List<XAttr> existingXAttrs, XAttr xAttr,
+      EnumSet<XAttrSetFlag> flag) throws QuotaExceededException, IOException {
+    List<XAttr> xAttrs = Lists.newArrayListWithCapacity(
+        existingXAttrs != null ? existingXAttrs.size() + 1 : 1);
+    boolean exist = false;
+    if (existingXAttrs != null) {
+      for (XAttr a: existingXAttrs) {
+        if ((a.getNameSpace() == xAttr.getNameSpace()
+            && a.getName().equalsIgnoreCase(xAttr.getName()))) {
+          exist = true;
+        } else {
+          xAttrs.add(a);
+        }
+      }
+    }
+    
+    XAttrSetFlag.validate(xAttr.getName(), exist, flag);
+    xAttrs.add(xAttr);
+    
+    if (xAttrs.size() > inodeXAttrsLimit) {
+      throw new IOException("Operation fails, XAttrs of " +
+          "inode exceeds maximum limit of " + inodeXAttrsLimit);
+    }
+    
+    return xAttrs;
+  }
+  
+  void unprotectedUpdateXAttrs(String src, List<XAttr> xAttrs)
+      throws IOException {
+    INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
+    INode inode = resolveLastINode(iip);
+    
+    XAttrStorage.updateINodeXAttrs(inode, xAttrs);
+  }
+  
+  List<XAttr> getXAttrs(String src) throws IOException {
+    INodesInPath iip = getINodesInPath(normalizePath(src), true);
+    INode inode = resolveLastINode(iip);
+    return XAttrStorage.readINodeXAttrs(inode);
+  }
+  
 }
