@@ -28,6 +28,7 @@ import io.hops.transaction.EntityManager;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.server.namenode.XAttrFeature;
 
 import java.io.IOException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
@@ -371,7 +372,27 @@ public abstract class INodeWithAdditionalFields extends INode {
   public void setAccessTimeNoPersistance(long atime) {
     accessTime = atime;
   }
-
+  
+  @Override
+  final XAttrFeature getXAttrFeature() {
+    return getFeature(XAttrFeature.class);
+  }
+  
+  @Override
+  public void removeXAttrFeature() {
+    XAttrFeature f = getXAttrFeature();
+    Preconditions.checkNotNull(f);
+    removeFeature(f);
+  }
+  
+  @Override
+  public void addXAttrFeature(XAttrFeature f) {
+    XAttrFeature f1 = getXAttrFeature();
+    Preconditions.checkState(f1 == null, "Duplicated XAttrFeature");
+    
+    addFeature(f);
+  }
+  
   public void setUserID(int userId) throws IOException {
     setUserIDNoPersistence(userId);
     save();
@@ -429,7 +450,18 @@ public abstract class INodeWithAdditionalFields extends INode {
       + f.getClass().getSimpleName() + " not found.");
     features = arr;
   }
-
+  
+  protected <T extends Feature> T getFeature(Class<? extends Feature> clazz) {
+    for (Feature f : features) {
+      if (f.getClass() == clazz) {
+        @SuppressWarnings("unchecked")
+        T ret = (T) f;
+        return ret;
+      }
+    }
+    return null;
+  }
+  
   private int getUserIDDB(String name) throws IOException {
     if(name == null){
       return 0;

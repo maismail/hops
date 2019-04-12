@@ -210,6 +210,22 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
   }
   
   /**
+   * @return XAttrFeature
+   */
+  abstract XAttrFeature getXAttrFeature();
+  
+  /**
+   * Set <code>XAttrFeature</code>
+   */
+  abstract void addXAttrFeature(XAttrFeature xAttrFeature);
+  
+  
+  /**
+   * Remove <code>XAttrFeature</code>
+   */
+  abstract void removeXAttrFeature();
+  
+  /**
    * Check whether this is the root inode.
    */
   final boolean isRoot() {
