@@ -28,8 +28,10 @@ import io.hops.metadata.hdfs.dal.GroupDataAccess;
 import io.hops.metadata.hdfs.dal.HashBucketDataAccess;
 import io.hops.metadata.hdfs.dal.UserDataAccess;
 import io.hops.metadata.hdfs.dal.UserGroupDataAccess;
+import io.hops.metadata.hdfs.dal.XAttrDataAccess;
 import io.hops.metadata.hdfs.entity.Ace;
 import io.hops.metadata.hdfs.entity.HashBucket;
+import io.hops.metadata.hdfs.entity.StoredXAttr;
 import io.hops.resolvingcache.Cache;
 import io.hops.metadata.adaptor.BlockInfoDALAdaptor;
 import io.hops.metadata.adaptor.CacheDirectiveDALAdaptor;
@@ -113,6 +115,7 @@ import io.hops.transaction.context.SubTreeOperationsContext;
 import io.hops.transaction.context.TransactionsStats;
 import io.hops.transaction.context.UnderReplicatedBlockContext;
 import io.hops.transaction.context.VariableContext;
+import io.hops.transaction.context.XAttrContext;
 import io.hops.transaction.lock.LockFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -343,6 +346,8 @@ public class HdfsStorageFactory {
             (CachePoolDataAccess) getDataAccess(CachePoolDataAccess.class)));
         entityContexts.put(CachedBlock.class, new CachedBlockContext(
             (CachedBlockDataAccess) getDataAccess(CachedBlockDataAccess.class)));
+        entityContexts.put(StoredXAttr.class,
+            new XAttrContext((XAttrDataAccess)getDataAccess(XAttrDataAccess.class)));
         return entityContexts;
       }
 

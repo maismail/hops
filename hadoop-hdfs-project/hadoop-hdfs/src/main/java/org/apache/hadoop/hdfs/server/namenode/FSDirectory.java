@@ -1520,31 +1520,14 @@ public class FSDirectory implements Closeable {
       XAttr xAttr) throws IOException {
     INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
     INode inode = resolveLastINode(iip);
-    List<XAttr> existingXAttrs = XAttrStorage.readINodeXAttrs(inode);
-    List<XAttr> newXAttrs = filterINodeXAttr(existingXAttrs, xAttr);
-    if (existingXAttrs.size() != newXAttrs.size()) {
-      XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
+    XAttr attr = XAttrStorage.readINodeXAttr(inode, xAttr);
+    if(attr != null){
+      XAttrStorage.removeINodeXAttr(inode, xAttr);
       return xAttr;
     }
     return null;
   }
   
-  List<XAttr> filterINodeXAttr(List<XAttr> existingXAttrs,
-      XAttr xAttr) throws QuotaExceededException {
-    if (existingXAttrs == null || existingXAttrs.isEmpty()) {
-      return existingXAttrs;
-    }
-    
-    List<XAttr> xAttrs = Lists.newArrayListWithCapacity(existingXAttrs.size());
-    for (XAttr a : existingXAttrs) {
-      if (!(a.getNameSpace() == xAttr.getNameSpace()
-          && a.getName().equals(xAttr.getName()))) {
-        xAttrs.add(a);
-      }
-    }
-    
-    return xAttrs;
-  }
   
   void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
       throws IOException {
@@ -1555,37 +1538,18 @@ public class FSDirectory implements Closeable {
       EnumSet<XAttrSetFlag> flag) throws IOException {
     INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
     INode inode = resolveLastINode(iip);
-    List<XAttr> existingXAttrs = XAttrStorage.readINodeXAttrs(inode);
-    List<XAttr> newXAttrs = setINodeXAttr(existingXAttrs, xAttr, flag);
-    XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
+    XAttr attr = XAttrStorage.readINodeXAttr(inode, xAttr);
+    XAttrSetFlag.validate(xAttr.getName(), attr != null, flag);
+    
+    XAttrStorage.updateINodeXAttr(inode, xAttr);
+  
+    //TODO: use the num_xattrs in hdfs_inodes to solve this
+    //if (xAttrs.size() > inodeXAttrsLimit) {
+    //  throw new IOException("Cannot add additional XAttr to inode, "
+    //      + "would exceed limit of " + inodeXAttrsLimit);
+    //}
   }
   
-  List<XAttr> setINodeXAttr(List<XAttr> existingXAttrs, XAttr xAttr,
-      EnumSet<XAttrSetFlag> flag) throws QuotaExceededException, IOException {
-    List<XAttr> xAttrs = Lists.newArrayListWithCapacity(
-        existingXAttrs != null ? existingXAttrs.size() + 1 : 1);
-    boolean exist = false;
-    if (existingXAttrs != null) {
-      for (XAttr a: existingXAttrs) {
-        if ((a.getNameSpace() == xAttr.getNameSpace()
-            && a.getName().equals(xAttr.getName()))) {
-          exist = true;
-        } else {
-          xAttrs.add(a);
-        }
-      }
-    }
-    
-    XAttrSetFlag.validate(xAttr.getName(), exist, flag);
-    xAttrs.add(xAttr);
-    
-    if (xAttrs.size() > inodeXAttrsLimit) {
-      throw new IOException("Cannot add additional XAttr to inode, "
-          + "would exceed limit of " + inodeXAttrsLimit);
-    }
-    
-    return xAttrs;
-  }
   
   List<XAttr> getXAttrs(String src) throws IOException {
     INodesInPath iip = getINodesInPath(normalizePath(src), true);

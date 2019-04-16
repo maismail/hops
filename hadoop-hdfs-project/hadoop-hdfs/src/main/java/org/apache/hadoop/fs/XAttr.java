@@ -95,6 +95,10 @@ public class XAttr {
     return ns;
   }
   
+  public byte getNameSpaceByte(){
+    return (byte) ns.ordinal();
+  }
+  
   public String getName() {
     return name;
   }

@@ -34,6 +34,7 @@ import org.apache.hadoop.hdfs.server.namenode.FileUnderConstructionFeature;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
+import org.apache.hadoop.hdfs.server.namenode.XAttrFeature;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -257,7 +258,7 @@ public class INodeDALAdaptor
   public org.apache.hadoop.hdfs.server.namenode.INode convertDALtoHDFS(
       INode hopINode) throws StorageException {
     try{
-      org.apache.hadoop.hdfs.server.namenode.INode inode = null;
+      org.apache.hadoop.hdfs.server.namenode.INodeWithAdditionalFields inode = null;
       if (hopINode != null) {
         String group = null;
         String user = null;
@@ -317,6 +318,8 @@ public class INodeDALAdaptor
         inode.setLogicalTimeNoPersistance(hopINode.getLogicalTime());
         inode.setBlockStoragePolicyIDNoPersistance(hopINode.getStoragePolicyID());
         inode.setNumAcesNoPersistence(hopINode.getNumAces());
+        
+        inode.addXAttrFeature(new XAttrFeature(hopINode.getId()));
       }
       return inode;
     } catch (IOException ex) {

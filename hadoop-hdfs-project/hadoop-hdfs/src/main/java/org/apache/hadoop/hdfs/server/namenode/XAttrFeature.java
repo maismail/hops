@@ -17,27 +17,89 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import com.google.common.collect.Lists;
+import io.hops.exception.StorageException;
+import io.hops.exception.TransactionContextException;
+import io.hops.metadata.hdfs.entity.StoredXAttr;
+import io.hops.transaction.EntityManager;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
-import org.apache.hadoop.hdfs.server.namenode.INode;
 
 import com.google.common.collect.ImmutableList;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Feature for extended attributes.
  */
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
-  public static final ImmutableList<XAttr> EMPTY_ENTRY_LIST =
-      ImmutableList.of();
 
-  private final ImmutableList<XAttr> xAttrs;
-
-  public XAttrFeature(ImmutableList<XAttr> xAttrs) {
-    this.xAttrs = xAttrs;
+  private final long inodeId;
+  
+  public XAttrFeature(long inodeId){
+    this.inodeId = inodeId;
+  }
+  
+  public XAttrFeature(ImmutableList<XAttr> xAttrs, long inodeId)
+      throws TransactionContextException, StorageException {
+    this.inodeId = inodeId;
+    for(XAttr attr: xAttrs){
+      EntityManager.add(convertXAttrtoStored(attr));
+    }
   }
 
-  public ImmutableList<XAttr> getXAttrs() {
-    return xAttrs;
+  public XAttr getXAttr(XAttr attr)
+      throws StorageException, TransactionContextException {
+    StoredXAttr storedXAttr = EntityManager.find(StoredXAttr.Finder.ByPrimaryKey,
+        getPrimaryKey(attr));
+    if(storedXAttr == null)
+      return null;
+    return convertStoredtoXAttr(storedXAttr);
   }
+  
+  public void addXAttr(XAttr attr)
+      throws TransactionContextException, StorageException {
+    StoredXAttr storedXAttr = convertXAttrtoStored(attr);
+    EntityManager.add(storedXAttr);
+  }
+  
+  public void removeXAttr(XAttr attr)
+      throws TransactionContextException, StorageException {
+    StoredXAttr storedXAttr = convertXAttrtoStored(attr);
+    EntityManager.remove(storedXAttr);
+  }
+  
+  public ImmutableList<XAttr> getXAttrs()
+      throws TransactionContextException, StorageException {
+    //return xAttrs;
+    Collection<StoredXAttr> extendedAttributes =
+        EntityManager.findList(StoredXAttr.Finder.ByInodeId, inodeId);
+    List<XAttr> attrs =
+        Lists.newArrayListWithExpectedSize(extendedAttributes.size());
+    for(StoredXAttr attr : extendedAttributes){
+      attrs.add(convertStoredtoXAttr(attr));
+    }
+    return ImmutableList.copyOf(attrs);
+  }
+  
+  private XAttr convertStoredtoXAttr(StoredXAttr attr){
+    XAttr.Builder builder = new XAttr.Builder();
+    builder.setName(attr.getName());
+    builder.setNameSpace(XAttr.NameSpace.values()[attr.getNamespace()]);
+    builder.setValue(attr.getValueBytes());
+    return builder.build();
+  }
+  
+  private StoredXAttr convertXAttrtoStored(XAttr attr){
+    return new StoredXAttr(inodeId, attr.getNameSpaceByte(), attr.getName(),
+        attr.getValue());
+  }
+  
+  private StoredXAttr.PrimaryKey getPrimaryKey(XAttr attr){
+    return new StoredXAttr.PrimaryKey(inodeId, attr.getNameSpaceByte(),
+        attr.getName());
+  }
+ 
 }
