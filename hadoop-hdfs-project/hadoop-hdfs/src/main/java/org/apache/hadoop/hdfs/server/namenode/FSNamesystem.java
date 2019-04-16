@@ -7921,9 +7921,26 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }*/
   }
   
+  private void checkXAttrSize(XAttr xAttr) {
+    if (xAttr.getName().length() > nnConf.xattrNameMaxLength) {
+      throw new HadoopIllegalArgumentException(
+          "XAttr name is too long, maximum length = "
+              + nnConf.xattrNameMaxLength + ", but now the length = "
+              + xAttr.getName().length());
+    }
+    if (xAttr.getValue() != null &&
+        xAttr.getValue().length > nnConf.xattrValueMaxLength) {
+      throw new HadoopIllegalArgumentException(
+          "XAttr value is too long, maximum length = "
+              + nnConf.xattrValueMaxLength + ", but now the length = "
+              + xAttr.getValue().length);
+    }
+  }
+  
   private void setXAttrInt(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
       throws IOException {
     /* nnConf.checkXAttrsConfigFlag();
+    checkXAttrSize(xAttr);
     HdfsFileStatus resultingStat = null;
     FSPermissionChecker pc = getPermissionChecker();
     try {

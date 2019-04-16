@@ -554,6 +554,10 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_NAMENODE_XATTRS_ENABLED_DEFAULT = true;
   public static final String  DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_KEY = "dfs.namenode.inode.xattrs.max-limit";
   public static final int     DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_DEFAULT = 32;
+  public static final String  DFS_NAMENODE_XATTR_NAME_MAX_LENGTH_KEY = "dfs.namenode.xattr.name.max-length";
+  public static final int     DFS_NAMENODE_XATTR_NAME_MAX_LENGTH_DEFAULT = 64;
+  public static final String  DFS_NAMENODE_XATTR_VALUE_MAX_LENGTH_KEY = "dfs.namenode.xattr.value.max-length";
+  public static final int     DFS_NAMENODE_XATTR_VALUE_MAX_LENGTH_DEFAULT = 16384;
   public static final boolean DFS_NAMENODE_NAME_DIR_RESTORE_DEFAULT = false;
   public static final String DFS_NAMENODE_SUPPORT_ALLOW_FORMAT_KEY =
       "dfs.namenode.support.allow.format";
