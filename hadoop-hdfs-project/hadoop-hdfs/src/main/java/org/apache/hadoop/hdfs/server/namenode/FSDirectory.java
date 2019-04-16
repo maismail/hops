@@ -200,8 +200,11 @@ public class FSDirectory implements Closeable {
         + " to a value less than 0");
   
     this.inodeXAttrsLimit = conf.getInt(
-        DFSConfigKeys.DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_KEY,
-        DFSConfigKeys.DFS_NAMENODE_INODE_XATTRS_MAX_LIMIT_DEFAULT);
+        DFSConfigKeys.DFS_NAMENODE_MAX_XATTRS_PER_INODE_KEY,
+        DFSConfigKeys.DFS_NAMENODE_MAX_XATTRS_PER_INODE_DEFAULT);
+    Preconditions.checkArgument(this.inodeXAttrsLimit >= 0,
+        "Cannot set a negative limit on the number of xattrs per inode (%s).",
+        DFSConfigKeys.DFS_NAMENODE_MAX_XATTRS_PER_INODE_KEY);
   
     int threshold =
         conf.getInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY,
@@ -1577,8 +1580,8 @@ public class FSDirectory implements Closeable {
     xAttrs.add(xAttr);
     
     if (xAttrs.size() > inodeXAttrsLimit) {
-      throw new IOException("Operation fails, XAttrs of " +
-          "inode exceeds maximum limit of " + inodeXAttrsLimit);
+      throw new IOException("Cannot add additional XAttr to inode, "
+          + "would exceed limit of " + inodeXAttrsLimit);
     }
     
     return xAttrs;
