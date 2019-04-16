@@ -7888,8 +7888,52 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
   }
   
-  void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
+  void setXAttr(final String src, final XAttr xAttr,
+      final EnumSet<XAttrSetFlag> flag)
       throws IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.SET_XATTR) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        LockFactory lf = getInstance();
+        INodeLock il = lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, src)
+            .setNameNodeID(nameNode.getId())
+            .setActiveNameNodes(nameNode.getActiveNameNodes().getActiveNodes())
+            .skipReadingQuotaAttr(!dir.isQuotaEnabled());
+        locks.add(il);
+        locks.add(lf.getXAttrLock());
+      }
+      
+      @Override
+      public Object performTask() throws IOException {
+        nnConf.checkXAttrsConfigFlag();
+        HdfsFileStatus resultingStat = null;
+        FSPermissionChecker pc = getPermissionChecker();
+        try {
+          XAttrPermissionFilter.checkPermissionForApi(pc, xAttr);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "setXAttr", src);
+          throw e;
+        }
+        byte[][] pathComponents = FSDirectory.getPathComponentsForReservedPath(src);
+        try {
+          checkNameNodeSafeMode("Cannot set XAttr on " + src);
+          //src = FSDirectory.resolvePath(src, pathComponents, dir);
+          INodesInPath iip = dir.getINodesInPath(src, true);
+          if (isPermissionEnabled) {
+            dir.checkPathAccess(pc, iip, FsAction.WRITE);
+          }
+    
+          dir.setXAttr(src, xAttr, flag);
+          resultingStat = dir.getAuditFileInfo(iip);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "setXAttr", src);
+          throw e;
+        }
+        logAuditEvent(true, "setXAttr", src, null, resultingStat);
+        return null;
+      }
+      
+    }.handle();
     /*
     nnConf.checkXAttrsConfigFlag();
     HdfsFileStatus resultingStat = null;

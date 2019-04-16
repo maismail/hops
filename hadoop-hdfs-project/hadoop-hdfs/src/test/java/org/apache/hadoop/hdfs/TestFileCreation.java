@@ -58,6 +58,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
 import java.util.logging.Logger;
@@ -1390,27 +1391,35 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem
         .newInstance(fs.getUri(), fs.getConf());
     try {
-      final int FILES = 10;
-      final int BLOCKS = 2;
+      final int FILES = 1;
+      final int BLOCKS = 0;
 
       Path base = new Path("/f1/f2/f3/f4/f5");
       dfs.mkdirs(base);
       
-      for(int f=0; f < FILES; f++){
+      Path file = new Path(base, "testFile");
+      dfs.create(file).close();
+      
+      /*for(int f=0; f < FILES; f++){
         FSDataOutputStream out = dfs.create(new Path(base, "test"+f));
         for(int k=0; k<BLOCKS; k++){
           out.write(k);
         }
         out.close();
-      }
+      }*/
 
-      for(int f=0; f<FILES; f++){
+      String test = "This is my first test";
+      dfs.setXAttr(file, "user.metadata", test.getBytes("utf-8"));
+      
+      test +="test";
+      
+      /*for(int f=0; f<FILES; f++){
         FSDataInputStream in = dfs.open(new Path(base, "test" + f));
         for(int k=0; k<BLOCKS; k++){
           assertTrue(in.read() == k);
         }
         in.close();
-      }
+      }*/
       
     } catch (Exception e) {
       e.printStackTrace();

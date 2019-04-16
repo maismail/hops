@@ -429,5 +429,7 @@ public class LockFactory {
   public Lock getAllCachedBlockLocks(){
     return new AllCachedBlockLock();
   }
+  
+  public Lock getXAttrLock(){ return new XAttrLock(); }
     
 }

@@ -17,27 +17,66 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import com.google.common.collect.Lists;
+import io.hops.exception.StorageException;
+import io.hops.exception.TransactionContextException;
+import io.hops.metadata.hdfs.entity.StoredXAttr;
+import io.hops.transaction.EntityManager;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 
 import com.google.common.collect.ImmutableList;
 
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Feature for extended attributes.
  */
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
-  public static final ImmutableList<XAttr> EMPTY_ENTRY_LIST =
-      ImmutableList.of();
+  //public static final ImmutableList<XAttr> EMPTY_ENTRY_LIST =
+   //   ImmutableList.of();
 
-  private final ImmutableList<XAttr> xAttrs;
-
-  public XAttrFeature(ImmutableList<XAttr> xAttrs) {
-    this.xAttrs = xAttrs;
+  //private final ImmutableList<XAttr> xAttrs;
+  private final long inodeId;
+  
+  public XAttrFeature(ImmutableList<XAttr> xAttrs, long inodeId)
+      throws TransactionContextException, StorageException {
+    this.inodeId = inodeId;
+    for(XAttr attr: xAttrs){
+      EntityManager.add(convert2(attr));
+    }
+   // this.xAttrs = xAttrs;
   }
 
-  public ImmutableList<XAttr> getXAttrs() {
-    return xAttrs;
+  public ImmutableList<XAttr> getXAttrs()
+      throws TransactionContextException, StorageException {
+    //return xAttrs;
+    Collection<StoredXAttr> extendedAttributes =
+        EntityManager.findList(StoredXAttr.Finder.ByInodeId, inodeId);
+    List<XAttr> attrs =
+        Lists.newArrayListWithExpectedSize(extendedAttributes.size());
+    for(StoredXAttr attr : extendedAttributes){
+      attrs.add(convert(attr));
+    }
+    return ImmutableList.copyOf(attrs);
   }
+  
+  private XAttr convert(StoredXAttr attr){
+    XAttr.Builder builder = new XAttr.Builder();
+    builder.setName(attr.getName());
+    builder.setNameSpace(XAttr.NameSpace.values()[attr.getNamespace()]);
+    builder.setValue(attr.getValue().getBytes());
+    return builder.build();
+  }
+  
+  private StoredXAttr convert2(XAttr attr){
+    StoredXAttr storedXAttr = new StoredXAttr(inodeId,
+        (byte) attr.getNameSpace().ordinal(), attr.getName(),
+        new String(attr.getValue()));
+    return storedXAttr;
+  }
+ 
 }

@@ -20,6 +20,8 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.List;
 
+import io.hops.exception.StorageException;
+import io.hops.exception.TransactionContextException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
@@ -38,7 +40,8 @@ public class XAttrStorage {
    * @param inode INode to read.
    * @return List<XAttr> <code>XAttr</code> list.
    */
-  public static List<XAttr> readINodeXAttrs(INode inode) {
+  public static List<XAttr> readINodeXAttrs(INode inode)
+      throws TransactionContextException, StorageException {
     XAttrFeature f = inode.getXAttrFeature();
     return f == null ? ImmutableList.<XAttr> of() : f.getXAttrs();
   }
@@ -49,12 +52,14 @@ public class XAttrStorage {
    * @param xAttrs to update xAttrs.
    */
   public static void updateINodeXAttrs(INode inode, 
-      List<XAttr> xAttrs) throws QuotaExceededException {
+      List<XAttr> xAttrs)
+      throws QuotaExceededException, TransactionContextException,
+      StorageException {
     if (xAttrs == null || xAttrs.isEmpty()) {
       return;
     }
     
     ImmutableList<XAttr> newXAttrs = ImmutableList.copyOf(xAttrs);
-    inode.addXAttrFeature(new XAttrFeature(newXAttrs));
+    inode.addXAttrFeature(new XAttrFeature(newXAttrs, inode.getId()));
   }
 }
