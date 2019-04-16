@@ -1185,12 +1185,28 @@
     <DATA>
       <TXID>91</TXID>
       <SRC>/file_concat_target</SRC>
+      <XATTR>
+        <NAMESPACE>USER</NAMESPACE>
+        <NAME>a1</NAME>
+        <VALUE>0x313233</VALUE>
+      </XATTR>
+    </DATA>
+  </RECORD>
+  <RECORD>
+    <OPCODE>OP_REMOVE_XATTR</OPCODE>
+    <DATA>
+      <TXID>92</TXID>
+      <SRC>/file_concat_target</SRC>
+      <XATTR>
+        <NAMESPACE>USER</NAMESPACE>
+        <NAME>a1</NAME>
+      </XATTR>
     </DATA>
   </RECORD>
   <RECORD>
     <OPCODE>OP_END_LOG_SEGMENT</OPCODE>
     <DATA>
-      <TXID>92</TXID>
+      <TXID>93</TXID>
     </DATA>
   </RECORD>
 </EDITS>

@@ -88,6 +88,7 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_STORAGE_POLICY_ENABLED_DE
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_STORAGE_POLICY_ENABLED_KEY;
 import static org.apache.hadoop.util.Time.now;
 import io.hops.metadata.hdfs.dal.DirectoryWithQuotaFeatureDataAccess;
+import org.apache.hadoop.hdfs.XAttrHelper;
 
 /**
  * Both FSDirectory and FSNamesystem manage the state of the namespace.
@@ -1504,18 +1505,25 @@ public class FSDirectory implements Closeable {
   
   
   void removeXAttr(String src, XAttr xAttr) throws IOException {
-      unprotectedRemoveXAttr(src, xAttr);
+    XAttr removedXAttr = unprotectedRemoveXAttr(src, xAttr);
+    if (removedXAttr == null) {
+      NameNode.stateChangeLog.info("DIR* FSDirectory.removeXAttr: XAttr " +
+          XAttrHelper.getPrefixName(xAttr) +
+          " does not exist on the path " + src);
+    }
   }
   
-  private List<XAttr> unprotectedRemoveXAttr(String src,
+  private XAttr unprotectedRemoveXAttr(String src,
       XAttr xAttr) throws IOException {
     INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
     INode inode = resolveLastINode(iip);
     List<XAttr> existingXAttrs = XAttrStorage.readINodeXAttrs(inode);
     List<XAttr> newXAttrs = filterINodeXAttr(existingXAttrs, xAttr);
-    XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
-    
-    return newXAttrs;
+    if (existingXAttrs.size() != newXAttrs.size()) {
+      XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
+      return xAttr;
+    }
+    return null;
   }
   
   List<XAttr> filterINodeXAttr(List<XAttr> existingXAttrs,
@@ -1540,15 +1548,13 @@ public class FSDirectory implements Closeable {
       unprotectedSetXAttr(src, xAttr, flag);
   }
   
-  List<XAttr> unprotectedSetXAttr(String src, XAttr xAttr,
+  void unprotectedSetXAttr(String src, XAttr xAttr,
       EnumSet<XAttrSetFlag> flag) throws IOException {
     INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
     INode inode = resolveLastINode(iip);
     List<XAttr> existingXAttrs = XAttrStorage.readINodeXAttrs(inode);
     List<XAttr> newXAttrs = setINodeXAttr(existingXAttrs, xAttr, flag);
     XAttrStorage.updateINodeXAttrs(inode, newXAttrs);
-    
-    return newXAttrs;
   }
   
   List<XAttr> setINodeXAttr(List<XAttr> existingXAttrs, XAttr xAttr,
@@ -1576,14 +1582,6 @@ public class FSDirectory implements Closeable {
     }
     
     return xAttrs;
-  }
-  
-  void unprotectedUpdateXAttrs(String src, List<XAttr> xAttrs)
-      throws IOException {
-    INodesInPath iip = getINodesInPath4Write(normalizePath(src), true);
-    INode inode = resolveLastINode(iip);
-    
-    XAttrStorage.updateINodeXAttrs(inode, xAttrs);
   }
   
   List<XAttr> getXAttrs(String src) throws IOException {
