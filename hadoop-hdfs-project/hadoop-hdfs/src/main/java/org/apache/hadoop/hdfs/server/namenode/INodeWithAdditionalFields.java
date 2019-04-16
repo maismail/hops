@@ -374,7 +374,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   }
   
   @Override
-  final XAttrFeature getXAttrFeature() {
+  XAttrFeature getXAttrFeature() {
     return getFeature(XAttrFeature.class);
   }
   
