@@ -50,6 +50,11 @@ public class XAttrStorage {
    */
   public static void updateINodeXAttrs(INode inode, 
       List<XAttr> xAttrs) throws QuotaExceededException {
+    
+    if(inode.getXAttrFeature() != null){
+      inode.removeXAttrFeature();
+    }
+    
     if (xAttrs == null || xAttrs.isEmpty()) {
       return;
     }
