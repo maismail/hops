@@ -7966,6 +7966,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       checkNameNodeSafeMode("Cannot set XAttr on " + src);
       src = FSDirectory.resolvePath(src, pathComponents, dir);
       if (isPermissionEnabled) {
+        checkOwner(pc, src);
         checkPathAccess(pc, src, FsAction.WRITE);
       }
       
@@ -8048,6 +8049,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       checkNameNodeSafeMode("Cannot remove XAttr entry on " + src);
       src = FSDirectory.resolvePath(src, pathComponents, dir);
       if (isPermissionEnabled) {
+        checkOwner(pc, src);
         checkPathAccess(pc, src, FsAction.WRITE);
       }
       
