@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EDITS>
-  <EDITS_VERSION>-53</EDITS_VERSION>
+  <EDITS_VERSION>-54</EDITS_VERSION>
   <RECORD>
     <OPCODE>OP_START_LOG_SEGMENT</OPCODE>
     <DATA>
@@ -1181,9 +1181,16 @@
     </DATA>
   </RECORD>
   <RECORD>
-    <OPCODE>OP_END_LOG_SEGMENT</OPCODE>
+    <OPCODE>OP_SET_XATTRS</OPCODE>
     <DATA>
       <TXID>91</TXID>
+      <SRC>/file_concat_target</SRC>
+    </DATA>
+  </RECORD>
+  <RECORD>
+    <OPCODE>OP_END_LOG_SEGMENT</OPCODE>
+    <DATA>
+      <TXID>92</TXID>
     </DATA>
   </RECORD>
 </EDITS>

@@ -1516,6 +1516,11 @@ public class DFSTestUtil {
             .setType(AclEntryType.OTHER)
             .build());
     filesystem.setAcl(pathConcatTarget, aclEntryList);
+    // OP_SET_XATTRS
+    filesystem.setXAttr(pathConcatTarget, "user.a1", 
+        new byte[]{0x31, 0x32, 0x33});
+    filesystem.setXAttr(pathConcatTarget, "user.a2", 
+        new byte[]{0x37, 0x38, 0x39});
   }
   
 
