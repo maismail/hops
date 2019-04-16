@@ -1589,7 +1589,7 @@ public interface ClientProtocol {
    * @param flag set flag
    * @throws IOException
    */
-  @Idempotent
+  @AtMostOnce
   public void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
       throws IOException;
   

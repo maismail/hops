@@ -7888,10 +7888,42 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
   }
   
+  /**
+   * Set xattr for a file or directory.
+   *
+   * @param src
+   *          - path on which it sets the xattr
+   * @param xAttr
+   *          - xAttr details to set
+   * @param flag
+   *          - xAttrs flags
+   * @throws AccessControlException
+   * @throws SafeModeException
+   * @throws UnresolvedLinkException
+   * @throws IOException
+   */
   void setXAttr(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
+      throws AccessControlException, SafeModeException,
+      UnresolvedLinkException, IOException {
+    /* CacheEntry cacheEntry = RetryCache.waitForCompletion(retryCache);
+    if (cacheEntry != null && cacheEntry.isSuccess()) {
+      return; // Return previous response
+    }
+    boolean success = false;
+    try {
+      setXAttrInt(src, xAttr, flag);
+      success = true;
+    } catch (AccessControlException e) {
+      logAuditEvent(false, "setXAttr", src);
+      throw e;
+    } finally {
+      RetryCache.setState(cacheEntry, success);
+    }*/
+  }
+  
+  private void setXAttrInt(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
       throws IOException {
-    /*
-    nnConf.checkXAttrsConfigFlag();
+    /* nnConf.checkXAttrsConfigFlag();
     HdfsFileStatus resultingStat = null;
     FSPermissionChecker pc = getPermissionChecker();
     try {
@@ -7913,15 +7945,12 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       
       dir.setXAttr(src, xAttr, flag);
       resultingStat = getAuditFileInfo(src, false);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "setXAttr", src);
-      throw e;
-    }
-    finally {
+    } finally {
       writeUnlock();
     }
     getEditLog().logSync();
-    logAuditEvent(true, "setXAttr", src, null, resultingStat);*/
+    logAuditEvent(true, "setXAttr", src, null, resultingStat);
+   */
   }
   
   List<XAttr> getXAttrs(String src, List<XAttr> xAttrs) throws IOException {
