@@ -20,9 +20,12 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.List;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
+import io.hops.metadata.hdfs.entity.StoredXAttr;
+import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
@@ -96,5 +99,46 @@ public class XAttrStorage {
     }
   
     inode.getXAttrFeature().removeXAttr(xAttr);
+  }
+  
+  
+  public static int getMaxXAttrSize(){
+    return StoredXAttr.MAX_XATTR_NAME_SIZE + StoredXAttr.MAX_XATTR_VALUE_SIZE;
+  }
+  
+  /**
+   * Verifies that the size of the name and value of an xattr is within
+   * the configured limit.
+   */
+  public static void checkXAttrSize(final XAttr xAttr,
+      final int xattrSizeLimit) {
+    
+    int nameSize = StoredXAttr.getXAttrBytes(xAttr.getName()).length;
+    int valueSize = 0;
+    if (xAttr.getValue() != null) {
+      valueSize = xAttr.getValue().length;
+    }
+    
+    if (nameSize > StoredXAttr.MAX_XATTR_NAME_SIZE) {
+      throw new HadoopIllegalArgumentException(
+          "The XAttr name is too big. The maximum  size of the"
+              + " name is " + StoredXAttr.MAX_XATTR_NAME_SIZE
+              + ", but the name size is " + nameSize);
+    }
+    
+    if (valueSize > StoredXAttr.MAX_XATTR_VALUE_SIZE) {
+      throw new HadoopIllegalArgumentException(
+          "The XAttr value is too big. The maximum  size of the"
+              + " value is " + StoredXAttr.MAX_XATTR_VALUE_SIZE
+              + ", but the value size is " + valueSize);
+    }
+    
+    int size = nameSize + valueSize;
+    if (size > xattrSizeLimit) {
+      throw new HadoopIllegalArgumentException(
+          "The XAttr is too big. The maximum combined size of the"
+              + " name and value is " + xattrSizeLimit
+              + ", but the total size is " + size);
+    }
   }
 }

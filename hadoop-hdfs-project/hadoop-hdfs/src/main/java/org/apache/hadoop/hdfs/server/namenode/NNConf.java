@@ -64,15 +64,18 @@ final class NNConf {
         DFSConfigKeys.DFS_NAMENODE_XATTRS_ENABLED_KEY,
         DFSConfigKeys.DFS_NAMENODE_XATTRS_ENABLED_DEFAULT);
     LogFactory.getLog(NNConf.class).info("XAttrs enabled? " + xattrsEnabled);
-    xattrMaxSize = conf.getInt(
+    int xattrMS = conf.getInt(
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTR_SIZE_KEY,
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTR_SIZE_DEFAULT);
-    Preconditions.checkArgument(xattrMaxSize >= 0,
+    Preconditions.checkArgument(xattrMS >= 0,
         "Cannot set a negative value for the maximum size of an xattr (%s).",
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTR_SIZE_KEY);
-    final String unlimited = xattrMaxSize == 0 ? " (unlimited)" : "";
+    if(xattrMS == 0){
+      xattrMS = XAttrStorage.getMaxXAttrSize();
+    }
+    this.xattrMaxSize = xattrMS;
     LogFactory.getLog(NNConf.class).info(
-        "Maximum size of an xattr: " + xattrMaxSize + unlimited);
+        "Maximum size of an xattr: " + xattrMaxSize );
   }
 
   /**

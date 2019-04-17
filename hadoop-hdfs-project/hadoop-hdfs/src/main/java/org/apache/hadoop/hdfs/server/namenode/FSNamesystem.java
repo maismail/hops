@@ -3057,7 +3057,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           !inode.asFile().isUnderConstruction()) {
         // This could be a retry RPC - i.e the client tried to close
         // the file, but missed the RPC response. Thus, it is trying
-        // again to close the file. If the file still exists and
+        // again to close the file. If the file still exists and◊
         // the client's view of the last block matches the actual
         // last block, then we'll treat it as a successful close.
         // See HDFS-3031.
@@ -7951,30 +7951,10 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   }
   
   
-  /**
-   * Verifies that the combined size of the name and value of an xattr is within
-   * the configured limit. Setting a limit of zero disables this check.
-   */
-  private void checkXAttrSize(XAttr xAttr) {
-    if (nnConf.xattrMaxSize == 0) {
-      return;
-    }
-    int size = xAttr.getName().getBytes(Charsets.UTF_8).length;
-    if (xAttr.getValue() != null) {
-      size += xAttr.getValue().length;
-    }
-    if (size > nnConf.xattrMaxSize) {
-      throw new HadoopIllegalArgumentException(
-          "The XAttr is too big. The maximum combined size of the"
-          + " name and value is " + nnConf.xattrMaxSize
-          + ", but the total size is " + size);
-    }
-  }
-  
   private void setXAttrInt(String src, XAttr xAttr, EnumSet<XAttrSetFlag> flag)
       throws IOException {
     nnConf.checkXAttrsConfigFlag();
-    checkXAttrSize(xAttr);
+    XAttrStorage.checkXAttrSize(xAttr, nnConf.xattrMaxSize);
     HdfsFileStatus resultingStat = null;
     FSPermissionChecker pc = getPermissionChecker();
     try {
