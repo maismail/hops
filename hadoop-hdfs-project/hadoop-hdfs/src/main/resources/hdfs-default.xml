@@ -1977,7 +1977,8 @@
     <name>dfs.namenode.fs-limits.max-xattrs-per-inode</name>
     <value>32</value>
     <description>
-      Maximum number of extended attributes per inode.
+      Maximum number of extended attributes per inode. The maximum allowed
+      number is 255 extended attributes per inode.
     </description>
   </property>
 

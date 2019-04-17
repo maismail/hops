@@ -8034,7 +8034,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
         LockFactory lf = getInstance();
-        INodeLock il = lf.getINodeLock(INodeLockType.READ, INodeResolveType.PATH
+        INodeLock il = lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH
             , src)
             .setNameNodeID(nameNode.getId())
             .setActiveNameNodes(nameNode.getActiveNameNodes().getActiveNodes())

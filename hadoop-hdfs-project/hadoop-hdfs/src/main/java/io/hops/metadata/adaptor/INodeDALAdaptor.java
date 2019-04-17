@@ -34,6 +34,7 @@ import org.apache.hadoop.hdfs.server.namenode.FileUnderConstructionFeature;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
+import org.apache.hadoop.hdfs.server.namenode.INodeWithAdditionalFields;
 import org.apache.hadoop.hdfs.server.namenode.XAttrFeature;
 
 import java.io.IOException;
@@ -250,6 +251,7 @@ public class INodeDALAdaptor
       }
       hopINode.setHeader(inode.getHeader());
       hopINode.setNumAces(inode.getNumAces());
+      hopINode.setNumXAttrs(inode.getNumXAttrs());
     }
     return hopINode;
   }
@@ -258,7 +260,7 @@ public class INodeDALAdaptor
   public org.apache.hadoop.hdfs.server.namenode.INode convertDALtoHDFS(
       INode hopINode) throws StorageException {
     try{
-      org.apache.hadoop.hdfs.server.namenode.INodeWithAdditionalFields inode = null;
+      org.apache.hadoop.hdfs.server.namenode.INode inode = null;
       if (hopINode != null) {
         String group = null;
         String user = null;
@@ -318,8 +320,12 @@ public class INodeDALAdaptor
         inode.setLogicalTimeNoPersistance(hopINode.getLogicalTime());
         inode.setBlockStoragePolicyIDNoPersistance(hopINode.getStoragePolicyID());
         inode.setNumAcesNoPersistence(hopINode.getNumAces());
+        inode.setNumXAttrsNoPersistence(hopINode.getNumXAttrs());
         
-        inode.addXAttrFeature(new XAttrFeature(hopINode.getId()));
+        if(inode.getNumXAttrs() > 0 ){
+          ((INodeWithAdditionalFields) inode).addXAttrFeature(new XAttrFeature(hopINode.getId()));
+        }
+        
       }
       return inode;
     } catch (IOException ex) {

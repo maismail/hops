@@ -199,13 +199,21 @@ public class FSDirectory implements Closeable {
         + DFSConfigKeys.DFS_NAMENODE_MAX_DIRECTORY_ITEMS_KEY
         + " to a value less than 0");
   
-    this.inodeXAttrsLimit = conf.getInt(
+    int inodeXAttrs = conf.getInt(
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTRS_PER_INODE_KEY,
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTRS_PER_INODE_DEFAULT);
-    Preconditions.checkArgument(this.inodeXAttrsLimit >= 0,
+    Preconditions.checkArgument(inodeXAttrs >= 0,
         "Cannot set a negative limit on the number of xattrs per inode (%s).",
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTRS_PER_INODE_KEY);
-  
+    
+    if(inodeXAttrs > XAttrStorage.getMaxNumberOfXAttrPerInode()){
+      inodeXAttrs = XAttrStorage.getMaxNumberOfXAttrPerInode();
+    }
+    
+    this.inodeXAttrsLimit = inodeXAttrs;
+    
+    NameNode.LOG.info("The maximum number of xattrs per inode is set to " + inodeXAttrsLimit);
+    
     int threshold =
         conf.getInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY,
             DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_DEFAULT);
@@ -1523,6 +1531,7 @@ public class FSDirectory implements Closeable {
     XAttr attr = XAttrStorage.readINodeXAttr(inode, xAttr);
     if(attr != null){
       XAttrStorage.removeINodeXAttr(inode, xAttr);
+      inode.decrementXAttrs();
       return xAttr;
     }
     return null;
@@ -1542,12 +1551,13 @@ public class FSDirectory implements Closeable {
     XAttrSetFlag.validate(xAttr.getName(), attr != null, flag);
     
     XAttrStorage.updateINodeXAttr(inode, xAttr);
-  
-    //TODO: use the num_xattrs in hdfs_inodes to solve this
-    //if (xAttrs.size() > inodeXAttrsLimit) {
-    //  throw new IOException("Cannot add additional XAttr to inode, "
-    //      + "would exceed limit of " + inodeXAttrsLimit);
-    //}
+    
+    if (inode.getNumXAttrs() > inodeXAttrsLimit) {
+      throw new IOException("Cannot add additional XAttr to inode, "
+          + "would exceed limit of " + inodeXAttrsLimit);
+    }
+    
+    inode.incrementXAttrs();
   }
   
   

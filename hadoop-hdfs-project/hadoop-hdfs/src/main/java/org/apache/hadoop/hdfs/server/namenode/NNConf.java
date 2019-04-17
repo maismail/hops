@@ -70,7 +70,7 @@ final class NNConf {
     Preconditions.checkArgument(xattrMS >= 0,
         "Cannot set a negative value for the maximum size of an xattr (%s).",
         DFSConfigKeys.DFS_NAMENODE_MAX_XATTR_SIZE_KEY);
-    if(xattrMS == 0){
+    if(xattrMS == 0 || xattrMS > XAttrStorage.getMaxXAttrSize()){
       xattrMS = XAttrStorage.getMaxXAttrSize();
     }
     this.xattrMaxSize = xattrMS;

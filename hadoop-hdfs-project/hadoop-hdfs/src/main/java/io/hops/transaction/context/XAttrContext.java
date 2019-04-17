@@ -162,6 +162,17 @@ public class XAttrContext extends BaseEntityContext<StoredXAttr.PrimaryKey,
   }
   
   @Override
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds,
+      Object... params) throws TransactionContextException {
+    HdfsTransactionContextMaintenanceCmds hopCmds =
+        (HdfsTransactionContextMaintenanceCmds) cmds;
+    if(hopCmds == HdfsTransactionContextMaintenanceCmds.NoXAttrsAttached){
+      Long inodeId = (Long) params[0];
+      xAttrsByInodeId.put(inodeId, null);
+    }
+  }
+  
+  @Override
   public void clear() throws TransactionContextException {
     super.clear();
     xAttrsByInodeId.clear();

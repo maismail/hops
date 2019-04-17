@@ -20,6 +20,7 @@ package io.hops.transaction.lock;
 import com.google.common.collect.Lists;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
 import io.hops.transaction.EntityManager;
+import io.hops.transaction.context.HdfsTransactionContextMaintenanceCmds;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 
@@ -53,9 +54,15 @@ public class XAttrLock extends Lock{
     BaseINodeLock inodeLock = (BaseINodeLock) locks.getLock(Type.INode);
     for(INode inode : inodeLock.getTargetINodes()){
       
-      //read all xattrs
       if(attrs == null || attrs.isEmpty()) {
-        //optimization; check the num_xattrs in the inode to avoid database
+        //read all xattrs
+        //Skip if the inode doesn't have any xattrs
+        if(inode.getNumXAttrs() == 0){
+          EntityManager.snapshotMaintenance
+              (HdfsTransactionContextMaintenanceCmds.NoXAttrsAttached,
+                  inode.getId());
+          continue;
+        }
         acquireLockList(DEFAULT_LOCK_TYPE, StoredXAttr.Finder.ByInodeId, inode.getId());
       }else{
         acquireLockList(DEFAULT_LOCK_TYPE, StoredXAttr.Finder.ByPrimaryKeyBatch,

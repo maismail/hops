@@ -129,6 +129,8 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
   public final static long ROOT_PARENT_ID = 0;
   public final static long ROOT_INODE_ID = 1;
   
+  private byte numXAttrs;
+  
   /**
    * To check if the request id is the same as saved id. Don't check fileId
    * with GRANDFATHER_INODE_ID for backward compatibility.
@@ -1050,5 +1052,25 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
    * and {@link DirectoryWithQuotaFeature}.
    */
   public interface Feature {
+  }
+  
+  public byte getNumXAttrs() {
+    return numXAttrs;
+  }
+  
+  public void incrementXAttrs()
+      throws TransactionContextException, StorageException {
+    this.numXAttrs++;
+    save();
+  }
+  
+  public void decrementXAttrs()
+      throws TransactionContextException, StorageException {
+    this.numXAttrs--;
+    save();
+  }
+  
+  public void setNumXAttrsNoPersistence(byte numXAttrs) {
+    this.numXAttrs = numXAttrs;
   }
 }

@@ -61,11 +61,8 @@ public class XAttrStorage {
    */
   public static List<XAttr> readINodeXAttrs(INode inode, List<XAttr> attrs)
       throws TransactionContextException, StorageException {
-    XAttrFeature f = inode.getXAttrFeature();
-    if(f == null){
-      inode.addXAttrFeature(new XAttrFeature(inode.getId()));
-    }
-  
+    XAttrFeature f = getXAttrFeature(inode);
+    
     if(attrs == null || attrs.isEmpty()){
       return f.getXAttrs();
     }else{
@@ -80,11 +77,8 @@ public class XAttrStorage {
    */
   public static void updateINodeXAttr(INode inode, XAttr xAttr)
       throws TransactionContextException, StorageException {
-    if(inode.getXAttrFeature() == null){
-      inode.addXAttrFeature(new XAttrFeature(inode.getId()));
-    }
-    
-    inode.getXAttrFeature().addXAttr(xAttr);
+    XAttrFeature f = getXAttrFeature(inode);
+    f.addXAttr(xAttr);
   }
   
   /**
@@ -94,13 +88,22 @@ public class XAttrStorage {
    */
   public static void removeINodeXAttr(INode inode, XAttr xAttr)
       throws TransactionContextException, StorageException {
-    if(inode.getXAttrFeature() == null){
-      inode.addXAttrFeature(new XAttrFeature(inode.getId()));
-    }
-  
-    inode.getXAttrFeature().removeXAttr(xAttr);
+    XAttrFeature f = getXAttrFeature(inode);
+    f.removeXAttr(xAttr);
   }
   
+  private static XAttrFeature getXAttrFeature(INode inode){
+    XAttrFeature f = inode.getXAttrFeature();
+    if(f == null){
+      f = new XAttrFeature(inode.getId());
+      inode.addXAttrFeature(f);
+    }
+    return f;
+  }
+  
+  public static int getMaxNumberOfXAttrPerInode(){
+    return StoredXAttr.MAX_NUM_XATTRS_PER_INODE;
+  }
   
   public static int getMaxXAttrSize(){
     return StoredXAttr.MAX_XATTR_NAME_SIZE + StoredXAttr.MAX_XATTR_VALUE_SIZE;
