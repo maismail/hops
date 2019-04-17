@@ -1550,7 +1550,7 @@ public class FSDirectory implements Closeable {
     XAttr attr = XAttrStorage.readINodeXAttr(inode, xAttr);
     XAttrSetFlag.validate(xAttr.getName(), attr != null, flag);
     
-    XAttrStorage.updateINodeXAttr(inode, xAttr);
+    XAttrStorage.updateINodeXAttr(inode, xAttr, flag);
     
     if (inode.getNumXAttrs() > inodeXAttrsLimit) {
       throw new IOException("Cannot add additional XAttr to inode, "

@@ -18,16 +18,20 @@
 
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
+import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
+import io.hops.transaction.EntityManager;
 import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
+import org.apache.hadoop.fs.XAttrSetFlag;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 
@@ -74,11 +78,18 @@ public class XAttrStorage {
    * Update xattr of inode.
    * @param inode Inode to update.
    * @param xAttr the xAttr to update.
+   * @param flag
    */
-  public static void updateINodeXAttr(INode inode, XAttr xAttr)
+  public static void updateINodeXAttr(INode inode, XAttr xAttr,
+      EnumSet<XAttrSetFlag> flag)
       throws TransactionContextException, StorageException {
     XAttrFeature f = getXAttrFeature(inode);
     f.addXAttr(xAttr);
+    if(flag.contains(XAttrSetFlag.CREATE)) {
+      logMetadataEvent(inode, xAttr, MetadataLogEntry.Operation.ADDXATTR);
+    }else{
+      logMetadataEvent(inode, xAttr, MetadataLogEntry.Operation.UPDATEXATTR);
+    }
   }
   
   /**
@@ -90,6 +101,7 @@ public class XAttrStorage {
       throws TransactionContextException, StorageException {
     XAttrFeature f = getXAttrFeature(inode);
     f.removeXAttr(xAttr);
+    logMetadataEvent(inode, xAttr, MetadataLogEntry.Operation.DELETEXATRR);
   }
   
   private static XAttrFeature getXAttrFeature(INode inode){
@@ -142,6 +154,35 @@ public class XAttrStorage {
           "The XAttr is too big. The maximum combined size of the"
               + " name and value is " + xattrSizeLimit
               + ", but the total size is " + size);
+    }
+  }
+  
+  private static void logMetadataEvent(INode inode, XAttr attr,
+      MetadataLogEntry.Operation operation)
+      throws TransactionContextException, StorageException {
+    /*
+    dataset_id --> dataset_id
+    inode_id --> inode_id
+    logical_time --> logical_time
+    inode_partition_id --> skip for now set to -1
+    inode_parent_id  --> reuse for the namespace field (byte)
+    inode_name  --> reuse for the xattr name
+    operation --> operation
+     */
+    if(inode.isPathMetaEnabled()) {
+      long datasetId = inode.getMetaEnabledParent().getId();
+      long inodeId = inode.getId();
+      int logicaltime = inode.incrementLogicalTime();
+      inode.save();
+  
+      long skip_inode_partition_id = -1;
+      long namespace = attr.getNameSpaceByte();
+      String name = attr.getName();
+  
+      MetadataLogEntry logEntry = new MetadataLogEntry(datasetId, inodeId
+          , skip_inode_partition_id, namespace, name, logicaltime, operation);
+  
+      EntityManager.add(logEntry);
     }
   }
 }
