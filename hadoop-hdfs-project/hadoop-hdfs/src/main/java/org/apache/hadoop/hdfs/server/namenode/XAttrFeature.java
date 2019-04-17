@@ -35,7 +35,10 @@ import java.util.List;
  */
 @InterfaceAudience.Private
 public class XAttrFeature implements INode.Feature {
-
+  
+  public static final ImmutableList<XAttr> EMPTY_ENTRY_LIST =
+      ImmutableList.of();
+  
   private final long inodeId;
   
   public XAttrFeature(long inodeId){
@@ -49,14 +52,18 @@ public class XAttrFeature implements INode.Feature {
       EntityManager.add(convertXAttrtoStored(attr));
     }
   }
-
-  public XAttr getXAttr(XAttr attr)
+  
+  public List<XAttr> getXAttr(List<XAttr> attrs)
       throws StorageException, TransactionContextException {
-    StoredXAttr storedXAttr = EntityManager.find(StoredXAttr.Finder.ByPrimaryKey,
-        getPrimaryKey(attr));
-    if(storedXAttr == null)
-      return null;
-    return convertStoredtoXAttr(storedXAttr);
+    List<XAttr> storedAttrs = Lists.newArrayList();
+    for(XAttr attr : attrs){
+      StoredXAttr storedXAttr = EntityManager.find(StoredXAttr.Finder.ByPrimaryKey,
+          getPrimaryKey(attr));
+      if(storedXAttr != null){
+        storedAttrs.add(convertStoredtoXAttr(storedXAttr));
+      }
+    }
+    return storedAttrs;
   }
   
   public void addXAttr(XAttr attr)
@@ -73,9 +80,12 @@ public class XAttrFeature implements INode.Feature {
   
   public ImmutableList<XAttr> getXAttrs()
       throws TransactionContextException, StorageException {
-    //return xAttrs;
     Collection<StoredXAttr> extendedAttributes =
         EntityManager.findList(StoredXAttr.Finder.ByInodeId, inodeId);
+    
+    if(extendedAttributes == null)
+      return EMPTY_ENTRY_LIST;
+    
     List<XAttr> attrs =
         Lists.newArrayListWithExpectedSize(extendedAttributes.size());
     for(StoredXAttr attr : extendedAttributes){

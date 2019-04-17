@@ -18,6 +18,8 @@
 package io.hops.transaction.context;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import io.hops.exception.StorageCallPreventedException;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.common.FinderType;
@@ -31,6 +33,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class XAttrContext extends BaseEntityContext<StoredXAttr.PrimaryKey,
     StoredXAttr> {
@@ -79,62 +82,65 @@ public class XAttrContext extends BaseEntityContext<StoredXAttr.PrimaryKey,
   }
   
   private StoredXAttr findByPrimaryKey(StoredXAttr.Finder finder,
-      Object[] params) throws StorageException {
+      Object[] params) throws StorageException, StorageCallPreventedException {
     final StoredXAttr.PrimaryKey pk = (StoredXAttr.PrimaryKey) params[0];
     StoredXAttr result = null;
     if(contains(pk)){
       result = get(pk);
-      hit(finder, result, "pk", pk);
+      hit(finder, result, "pk", pk, "results", result);
     }else{
+      aboutToAccessStorage(finder, params);
       List<StoredXAttr> results =
           dataAccess.getXAttrsByPrimaryKeyBatch(Arrays.asList(pk));
       result = results.get(0);
-      gotFromDB(result);
-      sync(results);
-      miss(finder, result, "pk", pk);
+      gotFromDB(pk, result);
+      miss(finder, result, "pk", pk, "results", results);
     }
     return result;
   }
   
   private Collection<StoredXAttr> findByInodeId(StoredXAttr.Finder finder,
-      Object[] params) throws StorageException {
+      Object[] params) throws StorageException, StorageCallPreventedException {
     final long inodeId = (Long) params[0];
     Collection<StoredXAttr> results = null;
     if(xAttrsByInodeId.containsKey(inodeId)){
       results = xAttrsByInodeId.get(inodeId);
-      hit(finder, results, "inodeId", inodeId);
+      hit(finder, results, "inodeId", inodeId, "results", results);
     }else{
+      aboutToAccessStorage(finder, params);
       results = dataAccess.getXAttrsByInodeId(inodeId);
-      xAttrsByInodeId.put(inodeId, results);
       gotFromDB(results);
-      sync(results);
-      miss(finder, results, "inodeId", inodeId);
+      xAttrsByInodeId.put(inodeId, results);
+      miss(finder, results, "inodeId", inodeId, "results", results);
     }
     return results;
   }
   
   private Collection<StoredXAttr> findByPrimaryKeyBatch(StoredXAttr.Finder finder,
-      Object[] params) throws StorageException {
+      Object[] params) throws StorageException, StorageCallPreventedException {
     final List<StoredXAttr.PrimaryKey> pks = (List<StoredXAttr.PrimaryKey>) params[0];
     List<StoredXAttr> results = null;
     if(containsAll(pks)){
       results = getAll(pks);
-      hit(finder, results, "pks", pks);
+      hit(finder, results, "pks", pks, "results", results);
     }else{
+      aboutToAccessStorage(finder, params);
       results = dataAccess.getXAttrsByPrimaryKeyBatch(pks);
-      gotFromDB(results);
-      sync(results);
-      miss(finder, results, "pks", pks);
+      gotFromDB(pks, results);
+      miss(finder, results, "pks", pks, "results", results);
     }
     return results;
   }
   
-  private void sync(Collection<StoredXAttr> attrs){
-    for (StoredXAttr attr : attrs) {
-      if (!xAttrsByInodeId.containsKey(attr.getInodeId())) {
-        xAttrsByInodeId.put(attr.getInodeId(), new ArrayList<StoredXAttr>());
-      }
-      xAttrsByInodeId.get(attr.getInodeId()).add(attr);
+  private void gotFromDB(List<StoredXAttr.PrimaryKey> pks, List<StoredXAttr> results){
+    Set<StoredXAttr.PrimaryKey> notFoundPks = Sets.newHashSet(pks);
+    for(StoredXAttr attr : results){
+      gotFromDB(attr);
+      notFoundPks.remove(attr.getPrimaryKey());
+    }
+    
+    for(StoredXAttr.PrimaryKey pk : notFoundPks){
+      gotFromDB(pk, null);
     }
   }
   

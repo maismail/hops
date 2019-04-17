@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -36,17 +37,6 @@ import com.google.common.collect.ImmutableList;
 public class XAttrStorage {
   
   /**
-   * Reads the existing extended attributes of an inode.
-   * @param inode INode to read.
-   * @return List<XAttr> <code>XAttr</code> list.
-   */
-  public static List<XAttr> readINodeXAttrs(INode inode)
-      throws TransactionContextException, StorageException {
-    XAttrFeature f = inode.getXAttrFeature();
-    return f == null ? ImmutableList.<XAttr> of() : f.getXAttrs();
-  }
-  
-  /**
    * Reads an existing extended attribute of inode.
    * @param inode INode to read.
    * @param attr XAttr to read.
@@ -54,39 +44,36 @@ public class XAttrStorage {
    */
   public static XAttr readINodeXAttr(INode inode, XAttr attr)
       throws TransactionContextException, StorageException {
+    List<XAttr> attrs = readINodeXAttrs(inode, Lists.newArrayList(attr));
+    if(attrs == null || attrs.isEmpty())
+      return null;
+    return attrs.get(0);
+  }
+  
+  /**
+   * Reads an existing extended attribute of inode.
+   * @param inode INode to read.
+   * @param attrs List of XAttrs to read.
+   * @return the existing list of XAttrs.
+   */
+  public static List<XAttr> readINodeXAttrs(INode inode, List<XAttr> attrs)
+      throws TransactionContextException, StorageException {
     XAttrFeature f = inode.getXAttrFeature();
     if(f == null){
       inode.addXAttrFeature(new XAttrFeature(inode.getId()));
     }
-    return f.getXAttr(attr);
-  }
   
-  /**
-   * Update xattrs of inode.
-   * @param inode INode to update
-   * @param xAttrs to update xAttrs.
-   */
-  public static void updateINodeXAttrs(INode inode, 
-      List<XAttr> xAttrs)
-      throws QuotaExceededException, TransactionContextException,
-      StorageException {
-    
-    if(inode.getXAttrFeature() != null){
-      inode.removeXAttrFeature();
+    if(attrs == null || attrs.isEmpty()){
+      return f.getXAttrs();
+    }else{
+      return f.getXAttr(attrs);
     }
-    
-    if (xAttrs == null || xAttrs.isEmpty()) {
-      return;
-    }
-    
-    ImmutableList<XAttr> newXAttrs = ImmutableList.copyOf(xAttrs);
-    inode.addXAttrFeature(new XAttrFeature(newXAttrs, inode.getId()));
   }
   
   /**
    * Update xattr of inode.
-   * @param inode
-   * @param xAttr
+   * @param inode Inode to update.
+   * @param xAttr the xAttr to update.
    */
   public static void updateINodeXAttr(INode inode, XAttr xAttr)
       throws TransactionContextException, StorageException {
@@ -97,6 +84,11 @@ public class XAttrStorage {
     inode.getXAttrFeature().addXAttr(xAttr);
   }
   
+  /**
+   * Remove xattr from inode.
+   * @param inode Inode to update.
+   * @param xAttr the xAttr to remove.
+   */
   public static void removeINodeXAttr(INode inode, XAttr xAttr)
       throws TransactionContextException, StorageException {
     if(inode.getXAttrFeature() == null){

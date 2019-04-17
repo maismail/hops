@@ -54,11 +54,11 @@ public class XAttrLock extends Lock{
     for(INode inode : inodeLock.getTargetINodes()){
       
       //read all xattrs
-      if(attrs == null) {
+      if(attrs == null || attrs.isEmpty()) {
         //optimization; check the num_xattrs in the inode to avoid database
-        EntityManager.findList(StoredXAttr.Finder.ByInodeId, inode.getId());
+        acquireLockList(DEFAULT_LOCK_TYPE, StoredXAttr.Finder.ByInodeId, inode.getId());
       }else{
-        EntityManager.findList(StoredXAttr.Finder.ByPrimaryKeyBatch,
+        acquireLockList(DEFAULT_LOCK_TYPE, StoredXAttr.Finder.ByPrimaryKeyBatch,
             convert(inode.getId(), attrs));
       }
     }

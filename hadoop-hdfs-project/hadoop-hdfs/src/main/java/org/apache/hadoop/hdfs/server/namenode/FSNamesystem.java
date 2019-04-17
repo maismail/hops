@@ -8031,26 +8031,15 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           if (isPermissionEnabled) {
             dir.checkPathAccess(pc, iip, FsAction.READ);
           }
-          List<XAttr> all = dir.getXAttrs(src);
-          List<XAttr> filteredAll = XAttrPermissionFilter.
-              filterXAttrsForApi(pc, all);
+          List<XAttr> filteredAll = dir.getXAttrs(src, filteredXAttrs);
+          
           if (getAll) {
             return filteredAll;
           } else {
             if (filteredAll == null || filteredAll.isEmpty()) {
               return null;
             }
-            List<XAttr> toGet = Lists.newArrayListWithCapacity(filteredXAttrs.size());
-            for (XAttr xAttr : filteredXAttrs) {
-              for (XAttr a : filteredAll) {
-                if (xAttr.getNameSpace() == a.getNameSpace()
-                    && xAttr.getName().equals(a.getName())) {
-                  toGet.add(a);
-                  break;
-                }
-              }
-            }
-            return toGet;
+            return filteredAll;
           }
         } catch (AccessControlException e) {
           logAuditEvent(false, "getXAttrs", src);

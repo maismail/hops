@@ -1551,10 +1551,10 @@ public class FSDirectory implements Closeable {
   }
   
   
-  List<XAttr> getXAttrs(String src) throws IOException {
+  List<XAttr> getXAttrs(String src, List<XAttr> xAttrs) throws IOException {
     INodesInPath iip = getINodesInPath(normalizePath(src), true);
     INode inode = resolveLastINode(iip);
-    return XAttrStorage.readINodeXAttrs(inode);
+    return XAttrStorage.readINodeXAttrs(inode, xAttrs);
   }
   
 }
