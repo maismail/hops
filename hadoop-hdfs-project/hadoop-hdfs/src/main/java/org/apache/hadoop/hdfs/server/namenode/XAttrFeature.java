@@ -20,13 +20,18 @@ package org.apache.hadoop.hdfs.server.namenode;
 import com.google.common.collect.Lists;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
+import io.hops.metadata.HdfsStorageFactory;
+import io.hops.metadata.hdfs.dal.XAttrDataAccess;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
 import io.hops.transaction.EntityManager;
+import io.hops.transaction.handler.HDFSOperationType;
+import io.hops.transaction.handler.LightWeightRequestHandler;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 
 import com.google.common.collect.ImmutableList;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
@@ -92,6 +97,21 @@ public class XAttrFeature implements INode.Feature {
       attrs.add(convertStoredtoXAttr(attr));
     }
     return ImmutableList.copyOf(attrs);
+  }
+  
+  public void remove(final int numXAttrs) throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.REMOVE_XATTRS_FOR_INODE){
+  
+      @Override
+      public Object performTask() throws IOException {
+        XAttrDataAccess xda = (XAttrDataAccess) HdfsStorageFactory
+            .getDataAccess(XAttrDataAccess.class);
+        int removed = xda.removeXAttrsByInodeId(inodeId);
+        requestHandlerLOG.trace("Successfully removed " + removed + " XAttrs " +
+            "out of " + numXAttrs + " for inode (" + inodeId + ")");
+        return null;
+      }
+    }.handle();
   }
   
   private XAttr convertStoredtoXAttr(StoredXAttr attr){

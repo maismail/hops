@@ -421,7 +421,7 @@ class FSDirDeleteOp {
    */
   private static long unprotectedDelete(
       FSDirectory fsd, INodesInPath iip, BlocksMapUpdateInfo collectedBlocks,
-      List<INode> removedINodes, long mtime) throws QuotaExceededException, StorageException, TransactionContextException {
+      List<INode> removedINodes, long mtime) throws IOException {
 
     // check if target node exists
     INode targetNode = iip.getLastINode();

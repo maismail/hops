@@ -864,7 +864,7 @@ public class FSDirectory implements Closeable {
     return null;
   }
   
-  long removeLastINode(final INodesInPath iip) throws StorageException, TransactionContextException {
+  long removeLastINode(final INodesInPath iip) throws IOException {
     QuotaCounts counts = new QuotaCounts.Builder().build();
     if (isQuotaEnabled()) {
       iip.getLastINode().computeQuotaUsage(getBlockStoragePolicySuite(), counts);
@@ -879,7 +879,7 @@ public class FSDirectory implements Closeable {
    */
   long removeLastINode(final INodesInPath iip, boolean forRename,
           final QuotaCounts counts)
-      throws StorageException, TransactionContextException {
+      throws IOException {
     final INode last = iip.getLastINode();
     final INodeDirectory parent = iip.getINode(-2).asDirectory();
     if(!forRename){

@@ -224,7 +224,7 @@ public class INodeDirectory extends INodeWithAdditionalFields {
   }
 
   public boolean removeChild(INode node)
-      throws StorageException, TransactionContextException {
+      throws IOException {
     INode existingInode = getChildINode(node.getLocalNameBytes());
     if (existingInode != null) {
       remove(existingInode);

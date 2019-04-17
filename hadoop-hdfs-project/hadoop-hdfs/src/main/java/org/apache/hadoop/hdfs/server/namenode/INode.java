@@ -637,7 +637,7 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
   }
 
 
-  boolean removeNode() throws StorageException, TransactionContextException {
+  boolean removeNode() throws IOException {
     if (parent == null) {
       return false;
     } else {
@@ -779,12 +779,12 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
     EntityManager.update(node);
   }
 
-  protected void remove() throws StorageException, TransactionContextException {
+  protected void remove() throws IOException {
     remove(this);
   }
 
   protected void remove(INode node)
-      throws StorageException, TransactionContextException {
+      throws IOException {
     EntityManager.remove(node);
     //if This inode is of type INodeDirectoryWithQuota then also delete the INode Attribute table
     if ((node instanceof INodeDirectory) && ((INodeDirectory) node).isWithQuota()) {
@@ -794,6 +794,14 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
     }
     
     cleanParity(node);
+    
+    if(node.getNumXAttrs() > 0){
+      
+      if(node.getXAttrFeature() != null) {
+        node.getXAttrFeature().remove(node.getNumXAttrs());
+        node.removeXAttrFeature();
+      }
+    }
   }
 
   private void cleanParity(INode node)

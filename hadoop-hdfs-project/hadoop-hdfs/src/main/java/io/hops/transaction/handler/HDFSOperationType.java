@@ -386,5 +386,6 @@ public enum HDFSOperationType implements OperationType {
   //XAttr
   SET_XATTR,
   GET_XATTRS,
-  REMOVE_XATTRS
+  REMOVE_XATTRS,
+  REMOVE_XATTRS_FOR_INODE
 }

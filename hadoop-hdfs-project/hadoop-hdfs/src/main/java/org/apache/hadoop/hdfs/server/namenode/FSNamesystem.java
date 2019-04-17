@@ -3337,8 +3337,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
    *                      inodesMap
    * @param acquireINodeMapLock Whether to acquire the lock for inode removal
    */
-  void removeLeasesAndINodes(String src, List<INode> removedINodes) 
-      throws StorageException, TransactionContextException {
+  void removeLeasesAndINodes(String src, List<INode> removedINodes)
+      throws IOException {
     leaseManager.removeLeaseWithPrefixPath(src);
     // remove inodes from inodesMap
     if (removedINodes != null) {
