@@ -36,8 +36,12 @@ public class XAttrLock extends Lock{
   }
   
   public XAttrLock(XAttr attr){
-    this.attrs = new ArrayList<>();
-    this.attrs.add(attr);
+    if(attr != null) {
+      this.attrs = new ArrayList<>();
+      this.attrs.add(attr);
+    }else{
+      this.attrs = null;
+    }
   }
   
   public XAttrLock(){
