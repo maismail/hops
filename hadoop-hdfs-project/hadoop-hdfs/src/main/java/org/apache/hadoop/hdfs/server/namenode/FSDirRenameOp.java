@@ -60,7 +60,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.UnresolvedLinkException;
-import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.util.ChunkedArrayList;
 import org.apache.hadoop.util.Time;
@@ -924,7 +923,7 @@ class FSDirRenameOp {
           //No logging required
         } else {
           //rename from non metaEnabled directory to a metaEnabled directoy
-          srcChild.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Add);
+          srcChild.logMetadataEvent(INodeMetadataLogEntry.Operation.Add);
         }
       } else {
         if (dstDataset == null) {
@@ -933,10 +932,10 @@ class FSDirRenameOp {
               srcClone.getId(), srcClone.getPartitionId(), srcClone
               .getParentId(), srcClone.getLocalName(), srcChild
               .incrementLogicalTime(),
-              INodeMetadataLogEntry.INodeOperation.Delete));
+              INodeMetadataLogEntry.Operation.Delete));
         } else {
           //rename across datasets or the same dataset
-          srcChild.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Rename);
+          srcChild.logMetadataEvent(INodeMetadataLogEntry.Operation.Rename);
         }
       }
     }

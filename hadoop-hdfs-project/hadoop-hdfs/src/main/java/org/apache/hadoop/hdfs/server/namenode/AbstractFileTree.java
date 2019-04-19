@@ -27,7 +27,6 @@ import io.hops.metadata.HdfsStorageFactory;
 import io.hops.metadata.hdfs.dal.INodeDataAccess;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
 import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
-import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.ProjectedINode;
 import io.hops.security.UsersGroups;
 import io.hops.transaction.context.EntityContext;
@@ -49,7 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
+
 import io.hops.metadata.hdfs.dal.DirectoryWithQuotaFeatureDataAccess;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.hdfs.protocol.BlockStoragePolicy;
@@ -498,7 +497,7 @@ abstract class AbstractFileTree {
             metadataLogEntries.add(new INodeMetadataLogEntry(dstDataset.getId(),
                 node.getId(), node.getPartitionId(), node.getParentId(), node
                 .getName(), node.incrementLogicalTime(),
-                INodeMetadataLogEntry.INodeOperation.Add));
+                INodeMetadataLogEntry.Operation.Add));
           }
         }else{
           if(dstDataset == null){
@@ -507,13 +506,12 @@ abstract class AbstractFileTree {
             metadataLogEntries.add(new INodeMetadataLogEntry(srcDataset.getId(),
                 node.getId(), node.getPartitionId(), node.getParentId(), node
                 .getName(), node.incrementLogicalTime(),
-                INodeMetadataLogEntry.INodeOperation.Delete));
+                INodeMetadataLogEntry.Operation.Delete));
           }else{
             //Move from one dataset to another
             metadataLogEntries.add(new INodeMetadataLogEntry(dstDataset.getId(),
                 node.getId(), node.getPartitionId(), node.getParentId(), node
-                .getName(), node.incrementLogicalTime(), INodeMetadataLogEntry
-                .INodeOperation.ChangeDataset));
+                .getName(), node.incrementLogicalTime(), INodeMetadataLogEntry.Operation.ChangeDataset));
           }
         }
         

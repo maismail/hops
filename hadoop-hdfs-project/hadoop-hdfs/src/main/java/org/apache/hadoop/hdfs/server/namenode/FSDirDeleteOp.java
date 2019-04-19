@@ -21,7 +21,6 @@ import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
 import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
-import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.ProjectedINode;
 import io.hops.metadata.hdfs.entity.SubTreeOperation;
 import io.hops.transaction.handler.HDFSOperationType;
@@ -35,7 +34,6 @@ import io.hops.transaction.lock.TransactionLockTypes.INodeResolveType;
 import io.hops.transaction.lock.TransactionLocks;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.namenode.INode.BlocksMapUpdateInfo;
 import org.apache.hadoop.util.ChunkedArrayList;
 
@@ -470,10 +468,10 @@ class FSDirDeleteOp {
        if(child.isDirectory()){
          addMetaDataLogForDirDeletion(child);
        }else{
-         child.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Delete);
+         child.logMetadataEvent(INodeMetadataLogEntry.Operation.Delete);
        }
       }
     }
-    targetNode.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Delete);
+    targetNode.logMetadataEvent(INodeMetadataLogEntry.Operation.Delete);
   }
 }

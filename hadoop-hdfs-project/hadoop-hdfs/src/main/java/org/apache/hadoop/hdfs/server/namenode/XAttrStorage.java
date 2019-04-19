@@ -21,11 +21,9 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
-import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
 import io.hops.metadata.hdfs.entity.XAttrMetadataLogEntry;
 import io.hops.transaction.EntityManager;
@@ -33,10 +31,6 @@ import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.fs.XAttrSetFlag;
-import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * XAttrStorage is used to read and set xattrs for an inode.
@@ -87,9 +81,9 @@ public class XAttrStorage {
     XAttrFeature f = getXAttrFeature(inode);
     f.addXAttr(xAttr);
     if(flag.contains(XAttrSetFlag.CREATE)) {
-      logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.XAttrOperation.Add);
+      logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.Operation.Add);
     }else{
-      logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.XAttrOperation.Update);
+      logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.Operation.Update);
     }
   }
   
@@ -102,7 +96,7 @@ public class XAttrStorage {
       throws TransactionContextException, StorageException {
     XAttrFeature f = getXAttrFeature(inode);
     f.removeXAttr(xAttr);
-    logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.XAttrOperation.Delete);
+    logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.Operation.Delete);
   }
   
   private static XAttrFeature getXAttrFeature(INode inode){
@@ -159,7 +153,7 @@ public class XAttrStorage {
   }
   
   private static void logMetadataEvent(INode inode, XAttr attr,
-      XAttrMetadataLogEntry.XAttrOperation operation)
+      XAttrMetadataLogEntry.Operation operation)
       throws TransactionContextException, StorageException {
 
     if(inode.isPathMetaEnabled()) {

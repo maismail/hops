@@ -17,7 +17,6 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import com.google.common.base.Charsets;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.hops.common.IDsGeneratorFactory;
 import io.hops.common.IDsMonitor;
@@ -36,7 +35,6 @@ import io.hops.metadata.hdfs.dal.RetryCacheEntryDataAccess;
 import io.hops.metadata.hdfs.dal.SafeBlocksDataAccess;
 import io.hops.metadata.hdfs.entity.*;
 import io.hops.resolvingcache.Cache;
-import io.hops.security.UsersGroups;
 import io.hops.transaction.EntityManager;
 import io.hops.transaction.context.RootINodeCache;
 import io.hops.transaction.handler.EncodingStatusOperationType;
@@ -160,7 +158,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -1486,7 +1483,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             dir.checkPathAccess(pc, iip, FsAction.WRITE);
             if(metaEnabled) {
               logMetadataEvents(fileTree,
-                  INodeMetadataLogEntry.INodeOperation.Add);
+                  INodeMetadataLogEntry.Operation.Add);
             }
             setMetaEnabledInt(src, metaEnabled);
           } catch (AccessControlException e) {
@@ -1529,7 +1526,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   }
 
   private void logMetadataEvents(AbstractFileTree.FileTree fileTree,
-      INodeMetadataLogEntry.INodeOperation operation) throws IOException {
+      INodeMetadataLogEntry.Operation operation) throws IOException {
     ProjectedINode dataSetDir = fileTree.getSubtreeRoot();
     Collection<INodeMetadataLogEntry> logEntries = new ArrayList<>(fileTree
         .getAllChildren().size());
@@ -4166,7 +4163,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
               +path+" with "+ file.getBlocks().length
               +" blocks is persisted to the file system");
     }
-    file.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Add);
+    file.logMetadataEvent(INodeMetadataLogEntry.Operation.Add);
   }
   
   /**

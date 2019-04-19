@@ -21,7 +21,6 @@ import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
 import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
-import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.transaction.EntityManager;
 
 import java.io.FileNotFoundException;
@@ -458,7 +457,7 @@ public class INodeDirectory extends INodeWithAdditionalFields {
     }
   
     if (logMetadataEvent) {
-      node.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Add);
+      node.logMetadataEvent(INodeMetadataLogEntry.Operation.Add);
     }
 
     return true;
