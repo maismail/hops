@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.ProjectedINode;
 import io.hops.metadata.hdfs.entity.SubTreeOperation;
@@ -469,10 +470,10 @@ class FSDirDeleteOp {
        if(child.isDirectory()){
          addMetaDataLogForDirDeletion(child);
        }else{
-         child.logMetadataEvent(MetadataLogEntry.Operation.DELETE);
+         child.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Delete);
        }
       }
     }
-    targetNode.logMetadataEvent(MetadataLogEntry.Operation.DELETE);
+    targetNode.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Delete);
   }
 }

@@ -1485,7 +1485,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             final INodesInPath iip = dir.getINodesInPath4Write(src);
             dir.checkPathAccess(pc, iip, FsAction.WRITE);
             if(metaEnabled) {
-              logMetadataEvents(fileTree, MetadataLogEntry.Operation.ADD);
+              logMetadataEvents(fileTree,
+                  INodeMetadataLogEntry.INodeOperation.Add);
             }
             setMetaEnabledInt(src, metaEnabled);
           } catch (AccessControlException e) {
@@ -1528,13 +1529,13 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   }
 
   private void logMetadataEvents(AbstractFileTree.FileTree fileTree,
-      MetadataLogEntry.Operation operation) throws IOException {
+      INodeMetadataLogEntry.INodeOperation operation) throws IOException {
     ProjectedINode dataSetDir = fileTree.getSubtreeRoot();
-    Collection<MetadataLogEntry> logEntries = new ArrayList<>(fileTree
+    Collection<INodeMetadataLogEntry> logEntries = new ArrayList<>(fileTree
         .getAllChildren().size());
     for (ProjectedINode node : fileTree.getAllChildren()) {
       node.incrementLogicalTime();
-      MetadataLogEntry logEntry = new MetadataLogEntry(dataSetDir.getId(),
+      INodeMetadataLogEntry logEntry = new INodeMetadataLogEntry(dataSetDir.getId(),
           node.getId(), node.getPartitionId(), node.getParentId(), node
           .getName(), node.getLogicalTime(), operation);
       logEntries.add(logEntry);
@@ -4165,7 +4166,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
               +path+" with "+ file.getBlocks().length
               +" blocks is persisted to the file system");
     }
-    file.logMetadataEvent(MetadataLogEntry.Operation.ADD);
+    file.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Add);
   }
   
   /**

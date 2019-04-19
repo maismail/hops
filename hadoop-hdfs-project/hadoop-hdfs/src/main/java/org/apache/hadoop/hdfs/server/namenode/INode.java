@@ -25,6 +25,7 @@ import io.hops.exception.TransactionContextException;
 import io.hops.metadata.common.FinderType;
 import io.hops.metadata.hdfs.entity.EncodingStatus;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.transaction.EntityManager;
 import java.io.FileNotFoundException;
@@ -846,7 +847,7 @@ public abstract class INode implements Comparable<byte[]>, LinkedElement {
     setSubtreeLocked(false);
   }
 
-  public abstract void logMetadataEvent(MetadataLogEntry.Operation operation)
+  public abstract void logMetadataEvent(INodeMetadataLogEntry.INodeOperation operation)
       throws StorageException, TransactionContextException;
 
   boolean isPathMetaEnabled() throws TransactionContextException, StorageException {

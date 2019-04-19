@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.transaction.EntityManager;
 
@@ -457,7 +458,7 @@ public class INodeDirectory extends INodeWithAdditionalFields {
     }
   
     if (logMetadataEvent) {
-      node.logMetadataEvent(MetadataLogEntry.Operation.ADD);
+      node.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Add);
     }
 
     return true;

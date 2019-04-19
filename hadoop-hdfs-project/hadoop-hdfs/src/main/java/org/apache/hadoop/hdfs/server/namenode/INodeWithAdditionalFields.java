@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import com.google.common.base.Preconditions;
 import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.security.GroupNotFoundException;
 import io.hops.security.UserNotFoundException;
@@ -304,7 +305,7 @@ public abstract class INodeWithAdditionalFields extends INode {
   
   private int logicalTime;
   
-  public void logMetadataEvent(MetadataLogEntry.Operation operation)
+  public void logMetadataEvent(INodeMetadataLogEntry.INodeOperation operation)
       throws StorageException, TransactionContextException {
     if(isUnderConstruction()){
       return;
@@ -315,7 +316,7 @@ public abstract class INodeWithAdditionalFields extends INode {
             "wasn't commited to the database");
       }
       INodeDirectory datasetDir = getMetaEnabledParent();
-      EntityManager.add(new MetadataLogEntry(datasetDir.getId(), getId(),
+      EntityManager.add(new INodeMetadataLogEntry(datasetDir.getId(), getId(),
           getPartitionId(), getParentId(), getLocalName(), incrementLogicalTime(),
           operation));
       save();

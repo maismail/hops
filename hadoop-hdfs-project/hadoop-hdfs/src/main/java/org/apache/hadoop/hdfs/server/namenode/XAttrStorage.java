@@ -27,6 +27,7 @@ import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
+import io.hops.metadata.hdfs.entity.XAttrMetadataLogEntry;
 import io.hops.transaction.EntityManager;
 import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -86,9 +87,9 @@ public class XAttrStorage {
     XAttrFeature f = getXAttrFeature(inode);
     f.addXAttr(xAttr);
     if(flag.contains(XAttrSetFlag.CREATE)) {
-      logMetadataEvent(inode, xAttr, MetadataLogEntry.Operation.ADDXATTR);
+      logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.XAttrOperation.Add);
     }else{
-      logMetadataEvent(inode, xAttr, MetadataLogEntry.Operation.UPDATEXATTR);
+      logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.XAttrOperation.Update);
     }
   }
   
@@ -101,7 +102,7 @@ public class XAttrStorage {
       throws TransactionContextException, StorageException {
     XAttrFeature f = getXAttrFeature(inode);
     f.removeXAttr(xAttr);
-    logMetadataEvent(inode, xAttr, MetadataLogEntry.Operation.DELETEXATRR);
+    logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.XAttrOperation.Delete);
   }
   
   private static XAttrFeature getXAttrFeature(INode inode){
@@ -158,29 +159,18 @@ public class XAttrStorage {
   }
   
   private static void logMetadataEvent(INode inode, XAttr attr,
-      MetadataLogEntry.Operation operation)
+      XAttrMetadataLogEntry.XAttrOperation operation)
       throws TransactionContextException, StorageException {
-    /*
-    dataset_id --> dataset_id
-    inode_id --> inode_id
-    logical_time --> logical_time
-    inode_partition_id --> skip for now set to -1
-    inode_parent_id  --> reuse for the namespace field (byte)
-    inode_name  --> reuse for the xattr name
-    operation --> operation
-     */
+
     if(inode.isPathMetaEnabled()) {
       long datasetId = inode.getMetaEnabledParent().getId();
       long inodeId = inode.getId();
       int logicaltime = inode.incrementLogicalTime();
       inode.save();
+      
   
-      long skip_inode_partition_id = -1;
-      long namespace = attr.getNameSpaceByte();
-      String name = attr.getName();
-  
-      MetadataLogEntry logEntry = new MetadataLogEntry(datasetId, inodeId
-          , skip_inode_partition_id, namespace, name, logicaltime, operation);
+      XAttrMetadataLogEntry logEntry = new XAttrMetadataLogEntry(datasetId,
+          inodeId, logicaltime, attr.getNameSpaceByte(), attr.getName(), operation);
   
       EntityManager.add(logEntry);
     }

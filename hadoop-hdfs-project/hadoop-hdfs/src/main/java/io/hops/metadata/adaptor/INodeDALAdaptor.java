@@ -20,6 +20,7 @@ import io.hops.metadata.DalAdaptor;
 import io.hops.metadata.hdfs.dal.INodeDataAccess;
 import io.hops.metadata.hdfs.entity.INode;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.ProjectedINode;
 import io.hops.security.GroupNotFoundException;
@@ -190,7 +191,7 @@ public class INodeDALAdaptor
   }
 
   @Override
-  public void updateLogicalTime(Collection<MetadataLogEntry> logEntries)
+  public void updateLogicalTime(Collection<INodeMetadataLogEntry> logEntries)
       throws StorageException {
     dataAccess.updateLogicalTime(logEntries);
   }

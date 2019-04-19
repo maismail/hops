@@ -22,7 +22,7 @@ import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.metadata.hdfs.entity.EncodingStatus;
 import io.hops.metadata.hdfs.entity.INodeIdentifier;
-import io.hops.metadata.hdfs.entity.MetadataLogEntry;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.SubTreeOperation;
 import io.hops.transaction.EntityManager;
 import io.hops.transaction.context.HdfsTransactionContextMaintenanceCmds;
@@ -208,7 +208,7 @@ class FSDirRenameOp {
 
     INode srcDataSet = getMetaEnabledParent(srcInfo.getINodesInPath().getReadOnlyINodes());
     INode dstDataSet = getMetaEnabledParent(dstInfo.getINodesInPath().getReadOnlyINodes());
-    Collection<MetadataLogEntry> logEntries = Collections.EMPTY_LIST;
+    Collection<INodeMetadataLogEntry> logEntries = Collections.EMPTY_LIST;
 
     //TODO [S]  if src is a file then there is no need for sub tree locking
     //mechanism on the src and dst
@@ -269,7 +269,8 @@ class FSDirRenameOp {
 
   private static boolean renameToTransaction(final FSDirectory fsd, final String src, final long srcINodeID,
       final String dst, final QuotaCounts srcCounts, final QuotaCounts dstCounts,
-      final boolean isUsingSubTreeLocks, final Collection<MetadataLogEntry> logEntries, final INodesInPath srcIIP,
+      final boolean isUsingSubTreeLocks,
+      final Collection<INodeMetadataLogEntry> logEntries, final INodesInPath srcIIP,
       final INodesInPath dstIIP, final long timestamp) throws IOException {
 
     HopsTransactionalRequestHandler renameToHandler = new HopsTransactionalRequestHandler(
@@ -322,7 +323,7 @@ class FSDirRenameOp {
         // remove the subtree locks
         removeSubTreeLocksForRenameInternal(fsd, src, isUsingSubTreeLocks);
 
-        for (MetadataLogEntry logEntry : logEntries) {
+        for (INodeMetadataLogEntry logEntry : logEntries) {
           EntityManager.add(logEntry);
         }
 
@@ -485,7 +486,7 @@ class FSDirRenameOp {
 
     INode srcDataSet = getMetaEnabledParent(srcInfo.getINodesInPath().getReadOnlyINodes());
     INode dstDataSet = getMetaEnabledParent(dstInfo.getINodesInPath().getReadOnlyINodes());
-    Collection<MetadataLogEntry> logEntries = Collections.EMPTY_LIST;
+    Collection<INodeMetadataLogEntry> logEntries = Collections.EMPTY_LIST;
 
     //--
     //TODO [S]  if src is a file then there is no need for sub tree locking
@@ -548,7 +549,7 @@ class FSDirRenameOp {
   static RenameResult renameToTransaction(final FSDirectory fsd, final String src, final long srcINodeID, final String dst,
       final QuotaCounts srcCounts, final QuotaCounts dstCounts,
       final boolean isUsingSubTreeLocks,
-      final Collection<MetadataLogEntry> logEntries, final INodesInPath srcIIP,
+      final Collection<INodeMetadataLogEntry> logEntries, final INodesInPath srcIIP,
       final INodesInPath dstIIP, final long timestamp,
       final Options.Rename... options) throws IOException {
 
@@ -609,7 +610,7 @@ class FSDirRenameOp {
           }
         }
 
-        for (MetadataLogEntry logEntry : logEntries) {
+        for (INodeMetadataLogEntry logEntry : logEntries) {
           EntityManager.add(logEntry);
         }
 
@@ -923,18 +924,19 @@ class FSDirRenameOp {
           //No logging required
         } else {
           //rename from non metaEnabled directory to a metaEnabled directoy
-          srcChild.logMetadataEvent(MetadataLogEntry.Operation.ADD);
+          srcChild.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Add);
         }
       } else {
         if (dstDataset == null) {
           //rename from metaEnabled directory to a non metaEnabled directory
-          EntityManager.add(new MetadataLogEntry(srcDataset.getId(),
+          EntityManager.add(new INodeMetadataLogEntry(srcDataset.getId(),
               srcClone.getId(), srcClone.getPartitionId(), srcClone
               .getParentId(), srcClone.getLocalName(), srcChild
-              .incrementLogicalTime(), MetadataLogEntry.Operation.DELETE));
+              .incrementLogicalTime(),
+              INodeMetadataLogEntry.INodeOperation.Delete));
         } else {
           //rename across datasets or the same dataset
-          srcChild.logMetadataEvent(MetadataLogEntry.Operation.RENAME);
+          srcChild.logMetadataEvent(INodeMetadataLogEntry.INodeOperation.Rename);
         }
       }
     }

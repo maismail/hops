@@ -31,7 +31,9 @@ import io.hops.metadata.hdfs.dal.UserGroupDataAccess;
 import io.hops.metadata.hdfs.dal.XAttrDataAccess;
 import io.hops.metadata.hdfs.entity.Ace;
 import io.hops.metadata.hdfs.entity.HashBucket;
+import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
+import io.hops.metadata.hdfs.entity.XAttrMetadataLogEntry;
 import io.hops.resolvingcache.Cache;
 import io.hops.metadata.adaptor.BlockInfoDALAdaptor;
 import io.hops.metadata.adaptor.CacheDirectiveDALAdaptor;
@@ -328,9 +330,14 @@ public class HdfsStorageFactory {
         entityContexts.put(QuotaUpdate.class, new QuotaUpdateContext(
             (QuotaUpdateDataAccess) getDataAccess(
                 QuotaUpdateDataAccess.class)));
-        entityContexts.put(MetadataLogEntry.class, new MetadataLogContext(
-            (MetadataLogDataAccess) getDataAccess(MetadataLogDataAccess.class)
-        ));
+        
+        MetadataLogContext metadataLogContext = new MetadataLogContext(
+            (MetadataLogDataAccess) getDataAccess(MetadataLogDataAccess.class));
+            
+        entityContexts.put(MetadataLogEntry.class, metadataLogContext);
+        entityContexts.put(INodeMetadataLogEntry.class, metadataLogContext);
+        entityContexts.put(XAttrMetadataLogEntry.class, metadataLogContext);
+        
         entityContexts.put(SubTreeOperation.class, new SubTreeOperationsContext(
             (OngoingSubTreeOpsDataAccess) getDataAccess(OngoingSubTreeOpsDataAccess.class)));
         entityContexts.put(HashBucket.class, new HashBucketContext(
