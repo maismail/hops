@@ -17,12 +17,12 @@
  */
 package io.hops.transaction.lock;
 
-import com.google.common.collect.Lists;
 import io.hops.metadata.hdfs.entity.StoredXAttr;
 import io.hops.transaction.EntityManager;
 import io.hops.transaction.context.HdfsTransactionContextMaintenanceCmds;
 import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.XAttrFeature;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,7 +66,7 @@ public class XAttrLock extends Lock{
         acquireLockList(DEFAULT_LOCK_TYPE, StoredXAttr.Finder.ByInodeId, inode.getId());
       }else{
         acquireLockList(DEFAULT_LOCK_TYPE, StoredXAttr.Finder.ByPrimaryKeyBatch,
-            convert(inode.getId(), attrs));
+            XAttrFeature.getPrimaryKeys(inode.getId(), attrs));
       }
     }
   }
@@ -74,15 +74,5 @@ public class XAttrLock extends Lock{
   @Override
   protected Type getType() {
     return Type.XAttr;
-  }
-  
-  private List<StoredXAttr.PrimaryKey> convert(long inodeId, List<XAttr> attrs){
-    List<StoredXAttr.PrimaryKey> pks =
-        Lists.newArrayListWithExpectedSize(attrs.size());
-    for(XAttr attr : attrs){
-      pks.add(new StoredXAttr.PrimaryKey(inodeId, attr.getNameSpaceByte(),
-          attr.getName()));
-    }
-    return pks;
   }
 }

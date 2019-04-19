@@ -50,10 +50,28 @@ import org.apache.hadoop.classification.InterfaceAudience;
 public class XAttr {
 
   public static enum NameSpace {
-    USER,
-    TRUSTED,
-    SECURITY,
-    SYSTEM;
+    USER((byte)0),
+    TRUSTED((byte)1),
+    SECURITY((byte)2),
+    SYSTEM((byte)3);
+    
+    private final byte ns;
+    NameSpace(byte ns){
+      this.ns = ns;
+    }
+    
+    public byte getId(){
+      return ns;
+    }
+    
+    public static NameSpace valueOf(byte ns){
+      for(NameSpace nameSpace : NameSpace.values()){
+        if(nameSpace.getId() == ns){
+          return nameSpace;
+        }
+      }
+      return null;
+    }
   }
   
   private final NameSpace ns;
@@ -93,10 +111,6 @@ public class XAttr {
   
   public NameSpace getNameSpace() {
     return ns;
-  }
-  
-  public byte getNameSpaceByte(){
-    return (byte) ns.ordinal();
   }
   
   public String getName() {

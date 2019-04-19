@@ -63,7 +63,7 @@ public class XAttrFeature implements INode.Feature {
     List<XAttr> storedAttrs = Lists.newArrayList();
     for(XAttr attr : attrs){
       StoredXAttr storedXAttr = EntityManager.find(StoredXAttr.Finder.ByPrimaryKey,
-          getPrimaryKey(attr));
+          getPrimaryKey(inodeId, attr));
       if(storedXAttr != null){
         storedAttrs.add(convertStoredtoXAttr(storedXAttr));
       }
@@ -117,18 +117,28 @@ public class XAttrFeature implements INode.Feature {
   private XAttr convertStoredtoXAttr(StoredXAttr attr){
     XAttr.Builder builder = new XAttr.Builder();
     builder.setName(attr.getName());
-    builder.setNameSpace(XAttr.NameSpace.values()[attr.getNamespace()]);
+    builder.setNameSpace(XAttr.NameSpace.valueOf(attr.getNamespace()));
     builder.setValue(attr.getValueBytes());
     return builder.build();
   }
   
   private StoredXAttr convertXAttrtoStored(XAttr attr){
-    return new StoredXAttr(inodeId, attr.getNameSpaceByte(), attr.getName(),
+    return new StoredXAttr(inodeId, attr.getNameSpace().getId(), attr.getName(),
         attr.getValue());
   }
   
-  private StoredXAttr.PrimaryKey getPrimaryKey(XAttr attr){
-    return new StoredXAttr.PrimaryKey(inodeId, attr.getNameSpaceByte(),
+  public static List<StoredXAttr.PrimaryKey> getPrimaryKeys(long inodeId,
+      List<XAttr> attrs){
+    List<StoredXAttr.PrimaryKey> pks =
+        Lists.newArrayListWithExpectedSize(attrs.size());
+    for(XAttr attr : attrs){
+      pks.add(getPrimaryKey(inodeId, attr));
+    }
+    return pks;
+  }
+  
+  public static StoredXAttr.PrimaryKey getPrimaryKey(long inodeId, XAttr attr){
+    return new StoredXAttr.PrimaryKey(inodeId, attr.getNameSpace().getId(),
         attr.getName());
   }
  

@@ -164,7 +164,8 @@ public class XAttrStorage {
       
   
       XAttrMetadataLogEntry logEntry = new XAttrMetadataLogEntry(datasetId,
-          inodeId, logicaltime, attr.getNameSpaceByte(), attr.getName(), operation);
+          inodeId, logicaltime, attr.getNameSpace().getId(), attr.getName(),
+          operation);
   
       EntityManager.add(logEntry);
     }
