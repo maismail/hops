@@ -59,7 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.hadoop.hdfs.protocol.FsAclPermission;
-import org.mortbay.util.ajax.JSON;
 
 /**
  * JSON Utilities
@@ -751,7 +750,8 @@ public class JsonUtil {
     final Map<String, Map<String, Object>> finalMap =
         new TreeMap<String, Map<String, Object>>();
     finalMap.put(XAttr.class.getSimpleName(), m);
-    return JSON.toString(finalMap);
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.writeValueAsString(finalMap);
   }
   
   private static Map<String, Object> toJsonMap(final XAttr xAttr,
@@ -786,7 +786,8 @@ public class JsonUtil {
       final XAttrCodec encoding) throws IOException {
     final Map<String, Object> finalMap = new TreeMap<String, Object>();
     finalMap.put("XAttrs", toJsonArray(xAttrs, encoding));
-    return JSON.toString(finalMap);
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.writeValueAsString(finalMap);
   }
   
   public static XAttr toXAttr(final Map<?, ?> json) throws IOException {
@@ -808,8 +809,8 @@ public class JsonUtil {
     if (json == null) {
       return null;
     }
-    
-    return toXAttrMap((Object[])json.get("XAttrs"));
+
+    return toXAttrMap(getList(json, "XAttrs"));
   }
   
   public static Map<String, byte[]> toXAttrs(final Map<?, ?> json,
@@ -834,16 +835,16 @@ public class JsonUtil {
     return result;
   }
   
-  private static Map<String, byte[]> toXAttrMap(final Object[] objects)
+  private static Map<String, byte[]> toXAttrMap(final List<?> objects)
       throws IOException {
     if (objects == null) {
       return null;
-    } else if (objects.length == 0) {
+    } else if (objects.isEmpty()) {
       return Maps.newHashMap();
     } else {
       final Map<String, byte[]> xAttrs = Maps.newHashMap();
-      for(int i = 0; i < objects.length; i++) {
-        Map<?, ?> m = (Map<?, ?>) objects[i];
+      for (Object object : objects) {
+        Map<?, ?> m = (Map<?, ?>) object;
         String name = (String) m.get("name");
         String value = (String) m.get("value");
         xAttrs.put(name, decodeXAttrValue(value));
