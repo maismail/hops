@@ -15,11 +15,15 @@
  */
 package org.apache.hadoop.hdfs;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import io.hops.TestUtil;
 import io.hops.metadata.HdfsStorageFactory;
 import io.hops.metadata.hdfs.dal.MetadataLogDataAccess;
 import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
+import io.hops.metadata.hdfs.entity.XAttrMetadataLogEntry;
 import io.hops.transaction.handler.HDFSOperationType;
 import io.hops.transaction.handler.LightWeightRequestHandler;
 import junit.framework.TestCase;
@@ -33,8 +37,10 @@ import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,18 +63,18 @@ public class TestMetadataLog extends TestCase {
   }
 
   private boolean checkLog(long datasetId, long inodeId,
-      INodeMetadataLogEntry.Operation operation) throws IOException {
+      MetadataLogEntry.OperationBase operation) throws IOException {
     return checkLog(datasetId, inodeId, ANY_NAME, operation);
   }
 
-  private boolean checkLog(long datasetId, long inodeId, String inodeName,
-      INodeMetadataLogEntry.Operation operation) throws IOException {
+  private boolean checkLog(long datasetId, long inodeId,
+      String inodeNameOrXAttrName,
+      MetadataLogEntry.OperationBase operation) throws IOException {
     Collection<MetadataLogEntry> logEntries = getMetadataLogEntries(inodeId);
     for (MetadataLogEntry logEntry : logEntries) {
-      INodeMetadataLogEntry inodeLogEntry = (INodeMetadataLogEntry) logEntry;
-      if (inodeLogEntry.getOperation().equals(operation)) {
-        if ((datasetId == ANY_DATASET || datasetId == inodeLogEntry.getDatasetId())
-            && (inodeName.equals(ANY_NAME) || inodeName.equals(inodeLogEntry.getName()))) {
+      if (logEntry.getOperationId() == operation.getId()) {
+        if ((datasetId == ANY_DATASET || datasetId == logEntry.getDatasetId())
+            && (inodeNameOrXAttrName.equals(ANY_NAME) || inodeNameOrXAttrName.equals(logEntry.getPk3()))) {
           return true;
         }
       }
@@ -954,4 +960,182 @@ public class TestMetadataLog extends TestCase {
     }
   }
   
+  @Test
+  public void testXAttrNonLogginFolder() throws Exception{
+    Configuration conf = new HdfsConfiguration();
+    conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_XATTRS_ENABLED_KEY, true);
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+        .numDataNodes(2)
+        .build();
+    
+    final String name1 = "user.metadata";
+    final byte[] value1 = "this file metadata".getBytes(Charsets.UTF_8);
+    
+    try{
+      
+      DistributedFileSystem dfs = cluster.getFileSystem();
+      Path dir = new Path("/dir");
+      dfs.mkdirs(dir);
+      Path file = new Path(dir, "file");
+      DFSTestUtil.createFile(dfs, file, 0, (short)1, 0);
+      long inodeId = TestUtil.getINodeId(cluster.getNameNode(), file);
+      long datasetId = TestUtil.getINodeId(cluster.getNameNode(), dir);
+  
+      assertTrue(getMetadataLogEntries(inodeId).isEmpty());
+      
+      dfs.setXAttr(file, name1, value1);
+  
+      assertTrue(getMetadataLogEntries(inodeId).isEmpty());
+  
+      dfs.setMetaEnabled(dir, true);
+  
+      assertEquals(2, getMetadataLogEntries(inodeId).size());
+  
+      assertTrue(checkLog(datasetId, inodeId,
+          XAttrMetadataLogEntry.Operation.AddAll));
+      
+      assertTrue(checkLog(datasetId, inodeId,
+          INodeMetadataLogEntry.Operation.Add));
+      
+    }finally {
+      if(cluster != null){
+        cluster.shutdown();
+      }
+    }
+  }
+  
+  
+  @Test
+  public void testXAttrOnMetaEnabledDir() throws Exception{
+    Configuration conf = new HdfsConfiguration();
+    conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_XATTRS_ENABLED_KEY, true);
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+        .numDataNodes(2)
+        .build();
+    
+    final String name1 = "user.metadata";
+    final byte[] value1 = "this file metadata".getBytes(Charsets.UTF_8);
+  
+    final String name2 = "user.path";
+    final byte[] value2 = "/this/is/my/test/path/".getBytes(Charsets.UTF_8);
+    final byte[] value3 = "/replace/the/old/path".getBytes(Charsets.UTF_8);
+  
+    try{
+      
+      DistributedFileSystem dfs = cluster.getFileSystem();
+      Path dir = new Path("/dir");
+      dfs.mkdirs(dir);
+      dfs.setMetaEnabled(dir, true);
+      
+      Path file = new Path(dir, "file");
+      DFSTestUtil.createFile(dfs, file, 0, (short)1, 0);
+      long inodeId = TestUtil.getINodeId(cluster.getNameNode(), file);
+      long datasetId = TestUtil.getINodeId(cluster.getNameNode(), dir);
+      
+      //set xatrr name1=value1
+      dfs.setXAttr(file, name1, value1);
+  
+      assertTrue(Arrays.equals(value1, dfs.getXAttr(file, name1)));
+      
+      assertTrue(checkLog(datasetId, inodeId,
+          XAttrHelper.buildXAttr(name1).getName(),
+          XAttrMetadataLogEntry.Operation.Add));
+      
+      assertEquals(2, getMetadataLogEntries(inodeId).size());
+  
+      //set xatrr name2=value2
+      dfs.setXAttr(file, name2, value2);
+  
+      assertTrue(Arrays.equals(value2, dfs.getXAttr(file, name2)));
+  
+      assertTrue(checkLog(datasetId, inodeId,
+          XAttrHelper.buildXAttr(name2).getName(),
+          XAttrMetadataLogEntry.Operation.Add));
+  
+      assertEquals(3, getMetadataLogEntries(inodeId).size());
+      
+      assertEquals(3, TestUtil.getINode(cluster
+      .getNameNode(), file).getLogicalTime());
+      
+      //remove xatrr name1
+      dfs.removeXAttr(file, name1);
+  
+      checkXAttrLogicalTimeAddDelete(inodeId,
+          XAttrHelper.buildXAttr(name1).getName());
+      
+      //replace xattr name2=value3
+      dfs.setXAttr(file, name2, value3);
+  
+      assertTrue(Arrays.equals(value3, dfs.getXAttr(file, name2)));
+      
+      dfs.removeXAttr(file, name2);
+  
+      checkXAttrLogicalTimeAddUpdateDelete(inodeId,
+          XAttrHelper.buildXAttr(name2).getName());
+      
+    }finally {
+      if(cluster != null){
+        cluster.shutdown();
+      }
+    }
+  }
+  
+  private void checkXAttrLogicalTimeAddDelete(long inodeId, final String name) throws IOException {
+    List<MetadataLogEntry> allEntries = new
+        ArrayList<>(getMetadataLogEntries(inodeId));
+  
+    Collection<MetadataLogEntry> filtered =
+        Collections2.filter(allEntries,
+        new Predicate<MetadataLogEntry>() {
+      @Override
+      public boolean apply(
+          @Nullable
+              MetadataLogEntry logEntry) {
+        if(logEntry instanceof XAttrMetadataLogEntry){
+          return ((XAttrMetadataLogEntry)logEntry).getName().equals(name);
+        }
+        return false;
+      }
+    });
+    
+    List<MetadataLogEntry> xAttrLogEntries = new ArrayList<>(filtered);
+    
+    Collections.sort(xAttrLogEntries, LOGICAL_TIME_COMPARATOR);
+    assertTrue(xAttrLogEntries.size() == 2);
+    assertTrue(xAttrLogEntries.get(0).getOperationId() ==
+        XAttrMetadataLogEntry.Operation.Add.getId());
+    assertTrue(xAttrLogEntries.get(1).getOperationId() ==
+        XAttrMetadataLogEntry.Operation.Delete.getId());
+  }
+  
+  private void checkXAttrLogicalTimeAddUpdateDelete(long inodeId,
+      final String name) throws IOException {
+    List<MetadataLogEntry> allEntries = new
+        ArrayList<>(getMetadataLogEntries(inodeId));
+    
+    Collection<MetadataLogEntry> filtered =
+        Collections2.filter(allEntries,
+            new Predicate<MetadataLogEntry>() {
+              @Override
+              public boolean apply(
+                  @Nullable
+                      MetadataLogEntry logEntry) {
+                if(logEntry instanceof XAttrMetadataLogEntry){
+                  return ((XAttrMetadataLogEntry)logEntry).getName().equals(name);
+                }
+                return false;
+              }
+            });
+    
+    List<MetadataLogEntry> xAttrLogEntries = new ArrayList<>(filtered);
+    
+    Collections.sort(xAttrLogEntries, LOGICAL_TIME_COMPARATOR);
+    assertTrue(xAttrLogEntries.size() == 3);
+    assertTrue(xAttrLogEntries.get(0).getOperationId() ==
+        XAttrMetadataLogEntry.Operation.Add.getId());
+    assertTrue(xAttrLogEntries.get(1).getOperationId() ==
+        XAttrMetadataLogEntry.Operation.Update.getId());
+    assertTrue(xAttrLogEntries.get(2).getOperationId() ==
+        XAttrMetadataLogEntry.Operation.Delete.getId());
+  }
 }

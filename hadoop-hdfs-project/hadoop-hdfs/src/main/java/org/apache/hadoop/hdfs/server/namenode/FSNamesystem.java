@@ -1537,6 +1537,14 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           .getName(), node.getLogicalTime(), operation);
       logEntries.add(logEntry);
       EntityManager.add(logEntry);
+      
+      if(node.getNumXAttrs() > 0){
+        node.incrementLogicalTime();
+        XAttrMetadataLogEntry xattrLogEntry =
+            new XAttrMetadataLogEntry(dataSetDir.getId(), node.getId(),
+                node.getLogicalTime());
+        EntityManager.add(xattrLogEntry);
+      }
     }
     AbstractFileTree.LoggingQuotaCountingFileTree.updateLogicalTime
         (logEntries);

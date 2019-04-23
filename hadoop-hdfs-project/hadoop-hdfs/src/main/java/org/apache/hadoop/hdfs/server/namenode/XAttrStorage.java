@@ -73,14 +73,15 @@ public class XAttrStorage {
    * Update xattr of inode.
    * @param inode Inode to update.
    * @param xAttr the xAttr to update.
-   * @param flag
+   * @param exists
    */
   public static void updateINodeXAttr(INode inode, XAttr xAttr,
-      EnumSet<XAttrSetFlag> flag)
+      boolean xAttrExists)
       throws TransactionContextException, StorageException {
     XAttrFeature f = getXAttrFeature(inode);
     f.addXAttr(xAttr);
-    if(flag.contains(XAttrSetFlag.CREATE)) {
+    
+    if(!xAttrExists) {
       logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.Operation.Add);
     }else{
       logMetadataEvent(inode, xAttr, XAttrMetadataLogEntry.Operation.Update);
