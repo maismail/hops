@@ -23,6 +23,7 @@ import io.hops.exception.StorageException;
 import io.hops.exception.TransactionContextException;
 import io.hops.leader_election.node.SortedActiveNodeListPBImpl;
 import io.hops.metadata.HdfsStorageFactory;
+import io.hops.metadata.hdfs.entity.INodeIdentifier;
 import io.hops.transaction.EntityManager;
 import io.hops.transaction.handler.HDFSOperationType;
 import io.hops.transaction.handler.HopsTransactionalRequestHandler;
@@ -1247,19 +1248,110 @@ public class TestINodeFile {
 
   @Test
   public void testXAttrFeature() throws IOException {
+    
+    HdfsStorageFactory.setConfiguration(new Configuration());
+    HdfsStorageFactory.formatHdfsStorage();
+    
     replication = 3;
     preferredBlockSize = 128*1024*1024;
-    INodeFile inf = createINodeFile(replication, preferredBlockSize);
+
+    INodeFile inf = createINodeFileInDB(replication, preferredBlockSize);
     ImmutableList.Builder<XAttr> builder = new ImmutableList.Builder<XAttr>();
     XAttr xAttr = new XAttr.Builder().setNameSpace(XAttr.NameSpace.USER).
         setName("a1").setValue(new byte[]{0x31, 0x32, 0x33}).build();
     builder.add(xAttr);
-    XAttrFeature f = new XAttrFeature(builder.build(), inf.getId());
-    inf.addXAttrFeature(f);
-    XAttrFeature f1 = inf.getXAttrFeature();
-    assertEquals(xAttr, f1.getXAttrs().get(0));
-    inf.removeXAttrFeature();
-    f1 = inf.getXAttrFeature();
-    assertEquals(f1, null);
+    addXAttrFeature(inf, builder.build());
+    assertEquals(xAttr, getXAttr(inf));
+  
+    removeXAttr(inf, xAttr);
+    
+    assertEquals(getXAttr(inf), null);
+  }
+  
+  
+  private INodeFile createINodeFileInDB(final short replication,
+      final long preferredBlockSize) throws IOException {
+    return (INodeFile) new HopsTransactionalRequestHandler(HDFSOperationType.ADD_INODE) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        // We don't need lock in this test
+      }
+    
+      @Override
+      public Object performTask() throws IOException {
+        INodeFile inf = createINodeFile(replication, preferredBlockSize);
+        inf.setPartitionId(1L);
+        return inf;
+      }
+    }.handle();
+  }
+  
+  private void addXAttrFeature(final INodeFile iNodeFile,
+      final ImmutableList<XAttr> xAttrs) throws IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.SET_XATTR) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        LockFactory lf = LockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.WRITE,
+            new INodeIdentifier(iNodeFile.getId())));
+        locks.add(lf.getXAttrLock());
+      }
+    
+      @Override
+      public Object performTask() throws IOException {
+        INodeFile inf = (INodeFile) EntityManager.find(INode.Finder.ByINodeIdFTIS,
+            iNodeFile.getId());
+        
+        XAttrFeature f = new XAttrFeature(xAttrs, iNodeFile.getId());
+        inf.addXAttrFeature(f);
+        inf.incrementXAttrs();
+        return null;
+      }
+    }.handle();
+  }
+  
+  
+  private XAttr getXAttr(final INodeFile iNodeFile) throws IOException {
+    return (XAttr) new HopsTransactionalRequestHandler(HDFSOperationType.GET_XATTRS) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        LockFactory lf = LockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.WRITE,
+            new INodeIdentifier(iNodeFile.getId())));
+        locks.add(lf.getXAttrLock());
+      }
+      
+      @Override
+      public Object performTask() throws IOException {
+        INodeFile inf = (INodeFile) EntityManager.find(INode.Finder.ByINodeIdFTIS,
+            iNodeFile.getId());
+        
+        if(inf.getXAttrFeature() == null)
+          return null;
+        return inf.getXAttrFeature().getXAttrs().get(0);
+      }
+    }.handle();
+  }
+  
+  private void removeXAttr(final INodeFile iNodeFile, final XAttr xAttr) throws IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.REMOVE_XATTRS) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        LockFactory lf = LockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.WRITE,
+            new INodeIdentifier(iNodeFile.getId())));
+        locks.add(lf.getXAttrLock());
+      }
+      
+      @Override
+      public Object performTask() throws IOException {
+        INodeFile inf = (INodeFile) EntityManager.find(INode.Finder.ByINodeIdFTIS,
+            iNodeFile.getId());
+  
+        inf.getXAttrFeature().removeXAttr(xAttr);
+        inf.decrementXAttrs();
+        return null;
+      }
+    }.handle();
   }
 }

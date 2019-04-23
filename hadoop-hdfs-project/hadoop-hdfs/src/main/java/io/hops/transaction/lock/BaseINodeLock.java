@@ -200,6 +200,7 @@ public abstract class BaseINodeLock extends Lock {
       List<INode> list = resolvedINodesMap.getPathINodes(path);
       targetInodes.add(list.get(list.size() - 1));
     }
+    targetInodes.addAll(resolvedINodesMap.individualInodes);
     return targetInodes;
   }
   
