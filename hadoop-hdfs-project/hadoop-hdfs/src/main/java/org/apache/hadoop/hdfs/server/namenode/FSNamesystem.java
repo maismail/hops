@@ -1531,12 +1531,6 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     Collection<INodeMetadataLogEntry> logEntries = new ArrayList<>(fileTree
         .getAllChildren().size());
     for (ProjectedINode node : fileTree.getAllChildren()) {
-      node.incrementLogicalTime();
-      INodeMetadataLogEntry logEntry = new INodeMetadataLogEntry(dataSetDir.getId(),
-          node.getId(), node.getPartitionId(), node.getParentId(), node
-          .getName(), node.getLogicalTime(), operation);
-      logEntries.add(logEntry);
-      EntityManager.add(logEntry);
       
       if(node.getNumXAttrs() > 0){
         node.incrementLogicalTime();
@@ -1545,6 +1539,13 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
                 node.getLogicalTime());
         EntityManager.add(xattrLogEntry);
       }
+      
+      node.incrementLogicalTime();
+      INodeMetadataLogEntry logEntry = new INodeMetadataLogEntry(dataSetDir.getId(),
+          node.getId(), node.getPartitionId(), node.getParentId(), node
+          .getName(), node.getLogicalTime(), operation);
+      logEntries.add(logEntry);
+      EntityManager.add(logEntry);
     }
     AbstractFileTree.LoggingQuotaCountingFileTree.updateLogicalTime
         (logEntries);

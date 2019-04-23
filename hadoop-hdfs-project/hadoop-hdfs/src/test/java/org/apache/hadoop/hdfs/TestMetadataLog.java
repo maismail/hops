@@ -21,6 +21,7 @@ import com.google.common.collect.Collections2;
 import io.hops.TestUtil;
 import io.hops.metadata.HdfsStorageFactory;
 import io.hops.metadata.hdfs.dal.MetadataLogDataAccess;
+import io.hops.metadata.hdfs.dal.XAttrDataAccess;
 import io.hops.metadata.hdfs.entity.INodeMetadataLogEntry;
 import io.hops.metadata.hdfs.entity.MetadataLogEntry;
 import io.hops.metadata.hdfs.entity.XAttrMetadataLogEntry;
@@ -996,6 +997,13 @@ public class TestMetadataLog extends TestCase {
       
       assertTrue(checkLog(datasetId, inodeId,
           INodeMetadataLogEntry.Operation.Add));
+  
+      dfs.delete(file, true);
+  
+      assertTrue(checkLog(datasetId, inodeId,
+          INodeMetadataLogEntry.Operation.Delete));
+  
+      checkIfNoXAttrsForINode(inodeId);
       
     }finally {
       if(cluster != null){
@@ -1137,5 +1145,18 @@ public class TestMetadataLog extends TestCase {
         XAttrMetadataLogEntry.Operation.Update.getId());
     assertTrue(xAttrLogEntries.get(2).getOperationId() ==
         XAttrMetadataLogEntry.Operation.Delete.getId());
+  }
+  
+  private boolean checkIfNoXAttrsForINode(final long inodeId)
+      throws IOException {
+    return (Boolean) new LightWeightRequestHandler(HDFSOperationType.TEST){
+  
+      @Override
+      public Object performTask() throws IOException {
+        XAttrDataAccess da = (XAttrDataAccess)
+            HdfsStorageFactory.getDataAccess(XAttrDataAccess.class);
+        return da.getXAttrsByInodeId(inodeId) == null;
+      }
+    }.handle();
   }
 }
