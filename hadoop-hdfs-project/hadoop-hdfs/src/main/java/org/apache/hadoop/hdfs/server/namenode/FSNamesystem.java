@@ -1481,11 +1481,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
             FSPermissionChecker pc = getPermissionChecker();
             final INodesInPath iip = dir.getINodesInPath4Write(src);
             dir.checkPathAccess(pc, iip, FsAction.WRITE);
-            if(metaEnabled) {
-              logMetadataEvents(fileTree,
-                  INodeMetadataLogEntry.Operation.Add);
-            }
-            setMetaEnabledInt(src, metaEnabled);
+            setMetaEnabledInt(src, fileTree, metaEnabled);
           } catch (AccessControlException e) {
             logAuditEvent(false, "setMetaEnabled", src);
             throw e;
@@ -1511,7 +1507,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     return fileTree;
   }
   
-  private void setMetaEnabledInt(final String src, final boolean metaEnabled)
+  private void setMetaEnabledInt(final String src,
+      final AbstractFileTree.FileTree fileTree, final boolean metaEnabled)
       throws IOException {
     checkNameNodeSafeMode("Cannot set metaEnabled for " + src);
 
@@ -1523,6 +1520,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       dirNode.setMetaEnabled(metaEnabled);
       EntityManager.update(dirNode);
     }
+  
+    if(metaEnabled) {
+      logMetadataEvents(fileTree,
+          INodeMetadataLogEntry.Operation.Add);
+    }
   }
 
   private void logMetadataEvents(AbstractFileTree.FileTree fileTree,
@@ -1532,20 +1534,25 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
         .getAllChildren().size());
     for (ProjectedINode node : fileTree.getAllChildren()) {
       
+      node.incrementLogicalTime();
+      INodeMetadataLogEntry logEntry = new INodeMetadataLogEntry(dataSetDir.getId(),
+          node.getId(), node.getPartitionId(), node.getParentId(), node
+          .getName(), node.getLogicalTime(), operation);
+      EntityManager.add(logEntry);
+  
       if(node.getNumXAttrs() > 0){
         node.incrementLogicalTime();
         XAttrMetadataLogEntry xattrLogEntry =
             new XAttrMetadataLogEntry(dataSetDir.getId(), node.getId(),
                 node.getLogicalTime());
         EntityManager.add(xattrLogEntry);
+        //dummy log entry to update the logical time on the inode
+        logEntry = new INodeMetadataLogEntry(dataSetDir.getId(),
+            node.getId(), node.getPartitionId(), node.getParentId(), node
+            .getName(), node.getLogicalTime(), operation);
       }
-      
-      node.incrementLogicalTime();
-      INodeMetadataLogEntry logEntry = new INodeMetadataLogEntry(dataSetDir.getId(),
-          node.getId(), node.getPartitionId(), node.getParentId(), node
-          .getName(), node.getLogicalTime(), operation);
+  
       logEntries.add(logEntry);
-      EntityManager.add(logEntry);
     }
     AbstractFileTree.LoggingQuotaCountingFileTree.updateLogicalTime
         (logEntries);
